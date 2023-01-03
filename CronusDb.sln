@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CronusDb", "CronusDb\Cronus
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CronusDbTests", "CronusDbTests\CronusDbTests.csproj", "{8FC86CBF-3246-4FE1-8C01-D9EB566ABE95}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CronusDb.ManualTests", "CronusDb.ManualTests\CronusDb.ManualTests.csproj", "{7BCC95D6-BE27-429E-A8D8-19B3EC3A3315}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CronusDb.Benchmarks", "CronusDb.Benchmarks\CronusDb.Benchmarks.csproj", "{21AC71A9-5D12-4097-943F-E83972013BC1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{8FC86CBF-3246-4FE1-8C01-D9EB566ABE95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FC86CBF-3246-4FE1-8C01-D9EB566ABE95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FC86CBF-3246-4FE1-8C01-D9EB566ABE95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BCC95D6-BE27-429E-A8D8-19B3EC3A3315}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BCC95D6-BE27-429E-A8D8-19B3EC3A3315}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BCC95D6-BE27-429E-A8D8-19B3EC3A3315}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BCC95D6-BE27-429E-A8D8-19B3EC3A3315}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21AC71A9-5D12-4097-943F-E83972013BC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21AC71A9-5D12-4097-943F-E83972013BC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21AC71A9-5D12-4097-943F-E83972013BC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21AC71A9-5D12-4097-943F-E83972013BC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
