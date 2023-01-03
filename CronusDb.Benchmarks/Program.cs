@@ -2,4 +2,4 @@
 
 using CronusDb.Benchmarks;
 
-BenchmarkRunner.Run<WriteBenchmarks>();
+BenchmarkRunner.Run<EncryptedDeserializeBenchmarks>();

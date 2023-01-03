@@ -139,12 +139,12 @@ public sealed class CronusDb<T> {
         await JsonSerializer.SerializeAsync(stream, data, JsonContexts.Default.DictionaryStringString);
     }
 
-    /// <summary>
-    /// Returns a new In-Memory only instance of a database.
-    /// </summary>
-    public static Task<CronusDb<T>> Create() {
-        return Task.FromResult(new CronusDb<T>(new()));
-    }
+    ///// <summary>
+    ///// Returns a new In-Memory only instance of a database.
+    ///// </summary>
+    //public static Task<CronusDb<T>> Create() {
+    //    return Task.FromResult(new CronusDb<T>(new()));
+    //}
 
     /// <summary>
     /// Returns a new serializable instance of a database.
@@ -153,7 +153,11 @@ public sealed class CronusDb<T> {
     /// <remarks>
     /// The file will only be created after using the <see cref="Serialize"/> method.
     /// </remarks>
-    public static async Task<CronusDb<T>> Create(CronusDbConfiguration<T> config) {
+    public static async Task<CronusDb<T>> Create(CronusDbConfiguration<T>? config = null) {
+        if (config is null) {
+            return new CronusDb<T>(new());
+        }
+
         if (!File.Exists(config.Path)) {
             return new CronusDb<T>(new(), config);
         }
