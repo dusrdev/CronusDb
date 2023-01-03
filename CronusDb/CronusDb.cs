@@ -2,44 +2,80 @@
 
 namespace CronusDb;
 
+/// <summary>
+/// Cronus database
+/// </summary>
+/// <typeparam name="T">The type of the values in the KeyValuePairs</typeparam>
 public sealed class CronusDb<T> {
     private readonly Dictionary<string, T> _data;
     private readonly CronusDbConfiguration<T>? _config;
     private readonly bool _isMemoryOnly;
 
+    /// <summary>
+    /// Triggered when an item is upserted.
+    /// </summary>
+    /// <remarks>
+    /// You can use this to hook cache invalidation with <see cref="RemoveAny(Func{T, bool})"./>
+    /// </remarks>
     public event EventHandler? ItemUpserted;
 
     public void OnItemUpserted(EventArgs e) {
         ItemUpserted?.Invoke(this, e);
     }
 
+    /// <summary>
+    /// Triggered when an item is removed.
+    /// </summary>
+    /// <remarks>
+    /// You can use this to hook cache invalidation with <see cref="RemoveAny(Func{T, bool})"./>
+    /// </remarks>
     public event EventHandler? ItemRemoved;
 
     public void OnItemRemoved(EventArgs e) {
         ItemRemoved?.Invoke(this, e);
     }
 
-    internal CronusDb(Dictionary<string, T> data, CronusDbConfiguration<T>? config) {
+    // This constructor is used for a serializable instance
+    internal CronusDb(Dictionary<string, T> data, CronusDbConfiguration<T> config) {
         _data = data;
         _config = config;
         _isMemoryOnly = false;
     }
 
+    // This constructor is used for an In-Memory only instance
     internal CronusDb(Dictionary<string, T> data) {
         _data = data;
         _config = null;
         _isMemoryOnly = true;
     }
 
+    /// <summary>
+    /// Returns the value if it exists, otherwise the default for <typeparamref name="T"/>.
+    /// </summary>
+    /// <param name="key"></param>
     public T? Get(string key) => _data.TryGetValue(key, out var value) ? value : default;
 
+    /// <summary>
+    /// Inserts or updates
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
     public void Upsert(string key, T value) {
         _data[key] = value;
         OnItemUpserted(EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Checks whether the database contains the <paramref name="key"/>.
+    /// </summary>
+    /// <param name="key"></param>
     public bool ContainsKey(string key) => _data.ContainsKey(key);
 
+    /// <summary>
+    /// Removes a value by <paramref name="key"/>
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns>True if successful, false if database did not contain <paramref name="key"/>.</returns>
     public bool Remove(string key) {
         var output = _data.Remove(key);
         if (output) {
@@ -48,6 +84,13 @@ public sealed class CronusDb<T> {
         return output;
     }
 
+    /// <summary>
+    /// Loops through all database entries and removes any for which the <paramref name="selector"/> returns true.
+    /// </summary>
+    /// <param name="selector"></param>
+    /// <remarks>
+    /// This is the main way to perform cache invalidation.
+    /// </remarks>
     public void RemoveAny(Func<T, bool> selector) {
         foreach (var (k, v) in _data) {
             if (selector.Invoke(v)) {
@@ -57,7 +100,7 @@ public sealed class CronusDb<T> {
     }
 
     /// <summary>
-    /// Serializes the database to the path in <see cref="DbConfiguration{T}"/>
+    /// Serializes the database to the path in <see cref="CronusDbConfiguration{T}"/>.
     /// </summary>
     /// <remarks>
     /// If the instance created was In-Memory only, this method will not do anything.
@@ -78,14 +121,14 @@ public sealed class CronusDb<T> {
     }
 
     /// <summary>
-    /// Returns a new In-Memory only instance of a database
+    /// Returns a new In-Memory only instance of a database.
     /// </summary>
     public static Task<CronusDb<T>> Create() {
         return Task.FromResult(new CronusDb<T>(new()));
     }
 
     /// <summary>
-    /// Returns a new serializable In-Memory instance of a database
+    /// Returns a new serializable instance of a database.
     /// </summary>
     /// <param name="config"></param>
     /// <remarks>
@@ -100,7 +143,7 @@ public sealed class CronusDb<T> {
         var dict = await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.DictionaryStringString);
 
         if (dict is null) {
-            return new CronusDb<T>(new());
+            return new CronusDb<T>(new(), config);
         }
 
         var output = new Dictionary<string, T>();
