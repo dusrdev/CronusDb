@@ -29,6 +29,32 @@ namespace CronusDb.Tests {
         }
 
         [TestMethod]
+        public async Task GeneralTestEncrypted_CreateAddSerializeDeserialize() {
+            var config = new CronusDbConfiguration<int>() {
+                Path = @".\encrypted.db",
+                EncryptionKey = "1q2w3e4r5t",
+                Serializer = static x => x.ToString(),
+                Deserializer = static x => int.Parse(x)
+            };
+
+            var db = await CronusDb<int>.Create(config);
+
+            db.Upsert("David", 25);
+            db.Upsert("Ben", 28);
+            db.Upsert("Nick", 37);
+            db.Upsert("Alex", 63);
+
+            await db.Serialize();
+
+            var rdb = await CronusDb<int>.Create(config);
+
+            Assert.AreEqual(25, rdb.Get("David"));
+            Assert.AreEqual(28, rdb.Get("Ben"));
+            Assert.AreEqual(37, rdb.Get("Nick"));
+            Assert.AreEqual(63, rdb.Get("Alex"));
+        }
+
+        [TestMethod]
         public async Task UpsertTest() {
             var db = await CronusDb<int>.Create();
 
