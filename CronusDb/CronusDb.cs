@@ -7,6 +7,18 @@ public sealed class CronusDb<T> {
     private readonly CronusDbConfiguration<T>? _config;
     private readonly bool _isMemoryOnly;
 
+    public event EventHandler? ItemUpserted;
+
+    public void OnItemUpserted(EventArgs e) {
+        ItemUpserted?.Invoke(this, e);
+    }
+
+    public event EventHandler? ItemRemoved;
+
+    public void OnItemRemoved(EventArgs e) {
+        ItemRemoved?.Invoke(this, e);
+    }
+
     internal CronusDb(Dictionary<string, T> data, CronusDbConfiguration<T>? config) {
         _data = data;
         _config = config;
@@ -19,18 +31,27 @@ public sealed class CronusDb<T> {
         _isMemoryOnly = true;
     }
 
-    public T? GetValue(string key) => _data.TryGetValue(key, out var value) ? value : default;
+    public T? Get(string key) => _data.TryGetValue(key, out var value) ? value : default;
 
-    public void SetValue(string key, T value) => _data[key] = value;
+    public void Upsert(string key, T value) {
+        _data[key] = value;
+        OnItemUpserted(EventArgs.Empty);
+    }
 
-    public bool KeyExists(string key) => _data.ContainsKey(key);
+    public bool ContainsKey(string key) => _data.ContainsKey(key);
 
-    public bool Remove(string key) => _data.Remove(key);
+    public bool Remove(string key) {
+        var output = _data.Remove(key);
+        if (output) {
+            OnItemRemoved(EventArgs.Empty);
+        }
+        return output;
+    }
 
     public void RemoveAny(Func<T, bool> selector) {
         foreach (var (k, v) in _data) {
             if (selector.Invoke(v)) {
-                _data.Remove(k);
+                Remove(k);
             }
         }
     }
