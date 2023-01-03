@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace CronusDb;
 
@@ -116,8 +117,24 @@ public sealed class CronusDb<T> {
             output.Add(k, _config!.Serializer(v));
         }
 
+        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
+            await SerializeWithoutEncryption(output);
+            return;
+        }
+        await SerializeWithEncryption(output);
+    }
+
+    private async Task SerializeWithEncryption(Dictionary<string, string> data) {
+        using var aes = new CronusAesProvider(_config!.EncryptionKey!);
+        using var encrypter = aes.GetEncrypter();
+        using var fileStream = new FileStream(_config.Path, FileMode.Create);
+        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
+        await JsonSerializer.SerializeAsync(cryptoStream, data, JsonContexts.Default.DictionaryStringString);
+    }
+
+    private async Task SerializeWithoutEncryption(Dictionary<string, string> data) {
         using var stream = new FileStream(_config!.Path, FileMode.Create);
-        await JsonSerializer.SerializeAsync(stream, output, JsonContexts.Default.DictionaryStringString);
+        await JsonSerializer.SerializeAsync(stream, data, JsonContexts.Default.DictionaryStringString);
     }
 
     /// <summary>
@@ -139,8 +156,9 @@ public sealed class CronusDb<T> {
             return new CronusDb<T>(new(), config);
         }
 
-        using var stream = new FileStream(config.Path, FileMode.Open);
-        var dict = await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.DictionaryStringString);
+        var dict = string.IsNullOrWhiteSpace(config.EncryptionKey) ?
+            await DeserializeWithoutEncyption(config)
+            : await DeserializeWithEncyption(config);
 
         if (dict is null) {
             return new CronusDb<T>(new(), config);
@@ -153,5 +171,18 @@ public sealed class CronusDb<T> {
         }
 
         return new CronusDb<T>(output, config);
+    }
+
+    private static async Task<Dictionary<string, string>?> DeserializeWithEncyption(CronusDbConfiguration<T> config) {
+        using var aes = new CronusAesProvider(config.EncryptionKey!);
+        using var decrypter = aes.GetDecrypter();
+        using var fileStream = new FileStream(config.Path, FileMode.Open);
+        using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
+        return await JsonSerializer.DeserializeAsync(cryptoStream, JsonContexts.Default.DictionaryStringString);
+    }
+
+    private static async Task<Dictionary<string, string>?> DeserializeWithoutEncyption(CronusDbConfiguration<T> config) {
+        using var stream = new FileStream(config!.Path, FileMode.Open);
+        return await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.DictionaryStringString);
     }
 }
