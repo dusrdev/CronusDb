@@ -127,9 +127,11 @@ public sealed class CronusDb<T> {
     private async Task SerializeWithEncryption(Dictionary<string, string> data) {
         using var aes = new CronusAesProvider(_config!.EncryptionKey!);
         using var encrypter = aes.GetEncrypter();
-        using var fileStream = new FileStream(_config.Path, FileMode.Create);
+        using var fileStream = new FileStream(_config!.Path, FileMode.OpenOrCreate);
         using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
-        await JsonSerializer.SerializeAsync(cryptoStream, data, JsonContexts.Default.DictionaryStringString);
+        using var streamWriter = new StreamWriter(cryptoStream);
+        var json = JsonSerializer.Serialize(data, JsonContexts.Default.DictionaryStringString);
+        await streamWriter.WriteAsync(json);
     }
 
     private async Task SerializeWithoutEncryption(Dictionary<string, string> data) {
@@ -178,7 +180,9 @@ public sealed class CronusDb<T> {
         using var decrypter = aes.GetDecrypter();
         using var fileStream = new FileStream(config.Path, FileMode.Open);
         using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
-        return await JsonSerializer.DeserializeAsync(cryptoStream, JsonContexts.Default.DictionaryStringString);
+        using var streamReader = new StreamReader(cryptoStream);
+        var json = await streamReader.ReadToEndAsync();
+        return JsonSerializer.Deserialize(json, JsonContexts.Default.DictionaryStringString);
     }
 
     private static async Task<Dictionary<string, string>?> DeserializeWithoutEncyption(CronusDbConfiguration<T> config) {
