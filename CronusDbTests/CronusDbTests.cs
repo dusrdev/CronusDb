@@ -13,19 +13,84 @@ namespace CronusDb.Tests {
 
             var db = await CronusDb<int>.Create(config);
 
-            db.SetValue("David", 25);
-            db.SetValue("Irit", 61);
-            db.SetValue("Helena", 37);
-            db.SetValue("Alex", 63);
+            db.Upsert("David", 25);
+            db.Upsert("Ben", 28);
+            db.Upsert("Nick", 37);
+            db.Upsert("Alex", 63);
 
             await db.Serialize();
 
             var rdb = await CronusDb<int>.Create(config);
 
-            Assert.AreEqual(25, rdb.GetValue("David"));
-            Assert.AreEqual(61, rdb.GetValue("Irit"));
-            Assert.AreEqual(37, rdb.GetValue("Helena"));
-            Assert.AreEqual(63, rdb.GetValue("Alex"));
+            Assert.AreEqual(25, rdb.Get("David"));
+            Assert.AreEqual(28, rdb.Get("Ben"));
+            Assert.AreEqual(37, rdb.Get("Nick"));
+            Assert.AreEqual(63, rdb.Get("Alex"));
+        }
+
+        [TestMethod]
+        public async Task UpsertTest() {
+            var db = await CronusDb<int>.Create();
+
+            db.Upsert("David", 25);
+
+            Assert.IsTrue(db.ContainsKey("David"));
+        }
+
+        [TestMethod]
+        public async Task RemoveTest() {
+            var db = await CronusDb<int>.Create();
+
+            db.Upsert("David", 25);
+
+            db.Remove("David");
+
+            Assert.IsFalse(db.ContainsKey("David"));
+        }
+
+        [TestMethod]
+        public async Task RemoveAnyTest() {
+            var db = await CronusDb<int>.Create();
+
+            db.Upsert("David", 25);
+            db.Upsert("Ben", 28);
+            db.Upsert("Nick", 37);
+            db.Upsert("Alex", 63);
+
+            db.RemoveAny(static x => x > 30);
+
+            Assert.IsTrue(db.ContainsKey("David"));
+            Assert.IsTrue(db.ContainsKey("Ben"));
+            Assert.IsFalse(db.ContainsKey("Nick"));
+            Assert.IsFalse(db.ContainsKey("Alex"));
+        }
+
+        [TestMethod]
+        public async Task UpsertEventTest() {
+            var db = await CronusDb<int>.Create();
+
+            bool triggered = false;
+
+            db.ItemUpserted += (_, _) => triggered = true;
+
+            db.Upsert("David", 25);
+
+            Assert.IsTrue(triggered);
+        }
+
+        [TestMethod]
+        public async Task RemoveEventTest() {
+            var db = await CronusDb<int>.Create();
+
+            bool triggered = false;
+
+            db.Upsert("David", 25);
+
+            db.ItemRemoved += (_, _) => triggered = true;
+
+            db.Remove("David");
+
+            Assert.IsTrue(triggered);
         }
     }
 }
