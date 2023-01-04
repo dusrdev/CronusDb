@@ -4,6 +4,9 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Authors>David Shnayder</Authors>
+    <Copyright>David Shnayder - 2022</Copyright>
   </PropertyGroup>
 
 </Project>
