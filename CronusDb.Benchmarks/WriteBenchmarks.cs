@@ -4,12 +4,12 @@ namespace CronusDb.Benchmarks;
 
 [MemoryDiagnoser]
 public class WriteBenchmarks {
-    private CronusDb<User>? UserDb { get; set; }
+    private InMemoryDatabase<User>? UserDb { get; set; }
     private int num = 1;
 
     [GlobalSetup]
-    public async Task Setup() {
-        UserDb = await CronusDb<User>.Create();
+    public void Setup() {
+        UserDb = CronusDb.CreateInMemoryDatabase<User>();
     }
 
     [Benchmark]

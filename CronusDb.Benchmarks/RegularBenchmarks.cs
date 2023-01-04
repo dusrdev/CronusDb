@@ -6,14 +6,14 @@ namespace CronusDb.Benchmarks;
 
 [MemoryDiagnoser]
 public class RegularBenchmarks {
-    private CronusDb<User>? UserDb { get; set; }
+    private SerializableDatabase<User>? UserDb { get; set; }
 
     [GlobalSetup]
     public async Task Setup() {
-        UserDb = await CronusDb<User>.Create(new CronusDbConfiguration<User>() {
+        UserDb = await CronusDb.CreateSerializableDatabase(new SerializableDatabaseConfiguration<User>() {
             Path = @".\User.db",
-            Serializer = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
-            Deserializer = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
+            ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
+            FromStringConverter = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
         });
 
         foreach (var num in Enumerable.Range(1, 1001)) {

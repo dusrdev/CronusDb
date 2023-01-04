@@ -4,11 +4,11 @@ namespace CronusDb.Benchmarks;
 
 [MemoryDiagnoser]
 public class ReadBenchmarks {
-    private CronusDb<User>? UserDb { get; set; }
+    private InMemoryDatabase<User>? UserDb { get; set; }
 
     [GlobalSetup]
-    public async Task Setup() {
-        UserDb = await CronusDb<User>.Create();
+    public void Setup() {
+        UserDb = CronusDb.CreateInMemoryDatabase<User>();
 
         var user = new User {
             Age = 500,

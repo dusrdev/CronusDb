@@ -6,27 +6,27 @@ namespace CronusDb.Benchmarks;
 
 [MemoryDiagnoser]
 public class EncryptedDeserializeBenchmarks {
-    private CronusDb<User>? UserDb { get; set; }
-    private CronusDb<User>? EncryptedDb { get; set; }
+    private SerializableDatabase<User>? UserDb { get; set; }
+    private SerializableDatabase<User>? EncryptedDb { get; set; }
 
-    private readonly CronusDbConfiguration<User> _userConfig = new CronusDbConfiguration<User>() {
+    private readonly SerializableDatabaseConfiguration<User> _userConfig = new () {
         Path = @".\User.db",
-        Serializer = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
-        Deserializer = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
+        ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
+        FromStringConverter = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
     };
 
-    private readonly CronusDbConfiguration<User> _encryptedConfig = new CronusDbConfiguration<User>() {
+    private readonly SerializableDatabaseConfiguration<User> _encryptedConfig = new () {
         Path = @".\Encrypted.db",
         EncryptionKey = "1q2w3e4r5t",
-        Serializer = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
-        Deserializer = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
+        ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
+        FromStringConverter = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
     };
 
     [GlobalSetup]
     public async Task Setup() {
-        UserDb = await CronusDb<User>.Create(_userConfig);
+        UserDb = await CronusDb.CreateSerializableDatabase(_userConfig);
 
-        EncryptedDb = await CronusDb<User>.Create(_encryptedConfig);
+        EncryptedDb = await CronusDb.CreateSerializableDatabase(_encryptedConfig);
 
         foreach (var num in Enumerable.Range(1, 1001)) {
             var user = new User {
@@ -43,8 +43,8 @@ public class EncryptedDeserializeBenchmarks {
     }
 
     [Benchmark(Baseline = true)]
-    public async Task Deserialize() => _ = await CronusDb<User>.Create(_userConfig);
+    public async Task Deserialize() => _ = await CronusDb.CreateSerializableDatabase(_userConfig);
 
     [Benchmark]
-    public async Task DeserializeEncrypted() => _ = await CronusDb<User>.Create(_encryptedConfig);
+    public async Task DeserializeEncrypted() => _ = await CronusDb.CreateSerializableDatabase(_encryptedConfig);
 }

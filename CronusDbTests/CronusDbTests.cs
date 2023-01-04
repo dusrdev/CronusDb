@@ -5,13 +5,13 @@ namespace CronusDb.Tests {
     public class CronusDbTests {
         [TestMethod]
         public async Task GeneralTest_CreateAddSerializeDeserialize() {
-            var config = new CronusDbConfiguration<int>() {
+            var config = new SerializableDatabaseConfiguration<int>() {
                 Path = @".\temp.db",
-                Serializer = static x => x.ToString(),
-                Deserializer = static x => int.Parse(x)
+                ToStringConverter = static x => x.ToString(),
+                FromStringConverter = static x => int.Parse(x)
             };
 
-            var db = await CronusDb<int>.Create(config);
+            var db = await CronusDb.CreateSerializableDatabase(config);
 
             db.Upsert("David", 25);
             db.Upsert("Ben", 28);
@@ -20,7 +20,7 @@ namespace CronusDb.Tests {
 
             await db.Serialize();
 
-            var rdb = await CronusDb<int>.Create(config);
+            var rdb = await CronusDb.CreateSerializableDatabase(config);
 
             Assert.AreEqual(25, rdb.Get("David"));
             Assert.AreEqual(28, rdb.Get("Ben"));
@@ -30,14 +30,14 @@ namespace CronusDb.Tests {
 
         [TestMethod]
         public async Task GeneralTestEncrypted_CreateAddSerializeDeserialize() {
-            var config = new CronusDbConfiguration<int>() {
+            var config = new SerializableDatabaseConfiguration<int>() {
                 Path = @".\encrypted.db",
                 EncryptionKey = "1q2w3e4r5t",
-                Serializer = static x => x.ToString(),
-                Deserializer = static x => int.Parse(x)
+                ToStringConverter = static x => x.ToString(),
+                FromStringConverter = static x => int.Parse(x)
             };
 
-            var db = await CronusDb<int>.Create(config);
+            var db = await CronusDb.CreateSerializableDatabase(config);
 
             db.Upsert("David", 25);
             db.Upsert("Ben", 28);
@@ -46,7 +46,7 @@ namespace CronusDb.Tests {
 
             await db.Serialize();
 
-            var rdb = await CronusDb<int>.Create(config);
+            var rdb = await CronusDb.CreateSerializableDatabase(config);
 
             Assert.AreEqual(25, rdb.Get("David"));
             Assert.AreEqual(28, rdb.Get("Ben"));
@@ -55,8 +55,8 @@ namespace CronusDb.Tests {
         }
 
         [TestMethod]
-        public async Task UpsertTest() {
-            var db = await CronusDb<int>.Create();
+        public void UpsertTest() {
+            var db = CronusDb.CreateInMemoryDatabase<int>();
 
             db.Upsert("David", 25);
 
@@ -64,8 +64,8 @@ namespace CronusDb.Tests {
         }
 
         [TestMethod]
-        public async Task RemoveTest() {
-            var db = await CronusDb<int>.Create();
+        public void RemoveTest() {
+            var db = CronusDb.CreateInMemoryDatabase<int>();
 
             db.Upsert("David", 25);
 
@@ -75,8 +75,8 @@ namespace CronusDb.Tests {
         }
 
         [TestMethod]
-        public async Task RemoveAnyTest() {
-            var db = await CronusDb<int>.Create();
+        public void RemoveAnyTest() {
+            var db = CronusDb.CreateInMemoryDatabase<int>();
 
             db.Upsert("David", 25);
             db.Upsert("Ben", 28);
@@ -92,8 +92,8 @@ namespace CronusDb.Tests {
         }
 
         [TestMethod]
-        public async Task UpsertEventTest() {
-            var db = await CronusDb<int>.Create();
+        public void UpsertEventTest() {
+            var db = CronusDb.CreateInMemoryDatabase<int>();
 
             bool triggered = false;
 
@@ -105,8 +105,8 @@ namespace CronusDb.Tests {
         }
 
         [TestMethod]
-        public async Task RemoveEventTest() {
-            var db = await CronusDb<int>.Create();
+        public void RemoveEventTest() {
+            var db = CronusDb.CreateInMemoryDatabase<int>();
 
             bool triggered = false;
 
