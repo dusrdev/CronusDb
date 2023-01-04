@@ -61,7 +61,7 @@ public sealed class InMemoryDatabase<T> : CronusDatabase<T> {
     /// <summary>
     /// As this is an In-Memory only database, it does nothing.
     /// </summary>
-    public override Task Serialize() {
+    public override Task SerializeAsync() {
         return Task.CompletedTask;
     }
 }

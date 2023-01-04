@@ -63,7 +63,7 @@ public sealed class SerializableInMemoryDatabase<T> : CronusDatabase<T> {
     /// <summary>
     /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
     /// </summary>
-    public override async Task Serialize() {
+    public override async Task SerializeAsync() {
         var output = new Dictionary<string, string>();
 
         foreach (var (k, v) in _data) {
@@ -71,9 +71,9 @@ public sealed class SerializableInMemoryDatabase<T> : CronusDatabase<T> {
         }
 
         if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            await SerializeWithoutEncryption(output, _config!);
+            await SerializeWithoutEncryptionAsync(output, _config!);
             return;
         }
-        await SerializeWithEncryption(output, _config);
+        await SerializeWithEncryptionAsync(output, _config);
     }
 }

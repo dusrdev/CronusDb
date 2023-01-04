@@ -11,13 +11,13 @@ public class EncryptedSerializeBenchmarks {
 
     [GlobalSetup]
     public async Task Setup() {
-        UserDb = await CronusDb.CreateSerializableDatabase(new SerializableDatabaseConfiguration<User>() {
+        UserDb = await CronusDb.CreateSerializableDatabaseAsync(new SerializableDatabaseConfiguration<User>() {
             Path = @".\User.db",
             ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
             FromStringConverter = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)
         });
 
-        EncryptedDb = await CronusDb.CreateSerializableDatabase(new SerializableDatabaseConfiguration<User>() {
+        EncryptedDb = await CronusDb.CreateSerializableDatabaseAsync(new SerializableDatabaseConfiguration<User>() {
             Path = @".\Encrypted.db",
             EncryptionKey = "1q2w3e4r5t",
             ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
@@ -36,8 +36,8 @@ public class EncryptedSerializeBenchmarks {
     }
 
     [Benchmark(Baseline = true)]
-    public async Task Serialize() => await UserDb!.Serialize();
+    public async Task Serialize() => await UserDb!.SerializeAsync();
 
     [Benchmark]
-    public async Task SerializeEncrypted() => await EncryptedDb!.Serialize();
+    public async Task SerializeEncrypted() => await EncryptedDb!.SerializeAsync();
 }

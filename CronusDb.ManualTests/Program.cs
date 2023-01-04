@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 //db.Upsert("David", 25);
 
-//await db.Serialize();
+//await db.SerializeAsync();
 
 //var rdb = await CronusDb<int>.Create(config);
 

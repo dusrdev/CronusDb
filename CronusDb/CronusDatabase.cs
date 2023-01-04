@@ -38,9 +38,9 @@ public abstract class CronusDatabase<T> {
 
     public abstract void RemoveAny(Func<T, bool> selector);
 
-    public abstract Task Serialize();
+    public abstract Task SerializeAsync();
 
-    internal virtual async Task SerializeWithEncryption(Dictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
+    internal virtual async Task SerializeWithEncryptionAsync(Dictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
         using var aes = new CronusAesProvider(config.EncryptionKey!);
         using var encrypter = aes.GetEncrypter();
         using var fileStream = new FileStream(config.Path, FileMode.OpenOrCreate);
@@ -50,7 +50,7 @@ public abstract class CronusDatabase<T> {
         await streamWriter.WriteAsync(json);
     }
 
-    internal virtual async Task SerializeWithoutEncryption(Dictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
+    internal virtual async Task SerializeWithoutEncryptionAsync(Dictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
         using var stream = new FileStream(config.Path, FileMode.Create);
         await JsonSerializer.SerializeAsync(stream, data, JsonContexts.Default.DictionaryStringString);
     }

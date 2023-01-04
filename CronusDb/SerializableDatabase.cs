@@ -64,11 +64,11 @@ public sealed class SerializableDatabase<T> : CronusDatabase<T> {
     /// <summary>
     /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
     /// </summary>
-    public override async Task Serialize() {
+    public override async Task SerializeAsync() {
         if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            await SerializeWithoutEncryption(_data, _config);
+            await SerializeWithoutEncryptionAsync(_data, _config);
             return;
         }
-        await SerializeWithEncryption(_data, _config);
+        await SerializeWithEncryptionAsync(_data, _config);
     }
 }

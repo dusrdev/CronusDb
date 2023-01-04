@@ -11,16 +11,16 @@ namespace CronusDb.Tests {
                 FromStringConverter = static x => int.Parse(x)
             };
 
-            var db = await CronusDb.CreateSerializableDatabase(config);
+            var db = await CronusDb.CreateSerializableDatabaseAsync(config);
 
             db.Upsert("David", 25);
             db.Upsert("Ben", 28);
             db.Upsert("Nick", 37);
             db.Upsert("Alex", 63);
 
-            await db.Serialize();
+            await db.SerializeAsync();
 
-            var rdb = await CronusDb.CreateSerializableDatabase(config);
+            var rdb = await CronusDb.CreateSerializableDatabaseAsync(config);
 
             Assert.AreEqual(25, rdb.Get("David"));
             Assert.AreEqual(28, rdb.Get("Ben"));
@@ -37,16 +37,16 @@ namespace CronusDb.Tests {
                 FromStringConverter = static x => int.Parse(x)
             };
 
-            var db = await CronusDb.CreateSerializableDatabase(config);
+            var db = await CronusDb.CreateSerializableDatabaseAsync(config);
 
             db.Upsert("David", 25);
             db.Upsert("Ben", 28);
             db.Upsert("Nick", 37);
             db.Upsert("Alex", 63);
 
-            await db.Serialize();
+            await db.SerializeAsync();
 
-            var rdb = await CronusDb.CreateSerializableDatabase(config);
+            var rdb = await CronusDb.CreateSerializableDatabaseAsync(config);
 
             Assert.AreEqual(25, rdb.Get("David"));
             Assert.AreEqual(28, rdb.Get("Ben"));
