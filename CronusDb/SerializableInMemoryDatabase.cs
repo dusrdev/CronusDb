@@ -1,7 +1,4 @@
-﻿using System.Security.Cryptography;
-using System.Text.Json;
-
-namespace CronusDb;
+﻿namespace CronusDb;
 
 public sealed class SerializableInMemoryDatabase<T> : CronusDatabase<T> {
     private readonly Dictionary<string, T> _data;
@@ -74,24 +71,9 @@ public sealed class SerializableInMemoryDatabase<T> : CronusDatabase<T> {
         }
 
         if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            await SerializeWithoutEncryption(output);
+            await SerializeWithoutEncryption(output, _config!);
             return;
         }
-        await SerializeWithEncryption(output);
-    }
-
-    internal override async Task SerializeWithEncryption(Dictionary<string, string> data) {
-        using var aes = new CronusAesProvider(_config!.EncryptionKey!);
-        using var encrypter = aes.GetEncrypter();
-        using var fileStream = new FileStream(_config!.Path, FileMode.OpenOrCreate);
-        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
-        using var streamWriter = new StreamWriter(cryptoStream);
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.DictionaryStringString);
-        await streamWriter.WriteAsync(json);
-    }
-
-    internal override async Task SerializeWithoutEncryption(Dictionary<string, string> data) {
-        using var stream = new FileStream(_config!.Path, FileMode.Create);
-        await JsonSerializer.SerializeAsync(stream, data, JsonContexts.Default.DictionaryStringString);
+        await SerializeWithEncryption(output, _config);
     }
 }

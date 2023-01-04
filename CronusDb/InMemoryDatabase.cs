@@ -64,12 +64,4 @@ public sealed class InMemoryDatabase<T> : CronusDatabase<T> {
     public override Task Serialize() {
         return Task.CompletedTask;
     }
-
-    internal override Task SerializeWithEncryption(Dictionary<string, string> data) {
-        throw new InvalidOperationException("Cannot serialize an In-Memory only database.");
-    }
-
-    internal override Task SerializeWithoutEncryption(Dictionary<string, string> data) {
-        throw new InvalidOperationException("Cannot serialize an In-Memory only database.");
-    }
 }
