@@ -27,8 +27,15 @@ public sealed class SerializableDatabase<T> : CronusDatabase<T> {
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
+    /// <exception cref="InvalidOperationException">If the conversion to string using "ToStringConverter" failed./></exception>
     public override void Upsert(string key, T value) {
-        _data[key] = _config!.ToStringConverter.Invoke(value);
+        var val = string.Empty;
+        try {
+            val = _config!.ToStringConverter.Invoke(value);
+        } catch {
+            throw new InvalidOperationException($"Converting the value of key <{key}> failed.");
+        }
+        _data[key] = val;
         OnItemUpserted(EventArgs.Empty);
     }
 
@@ -58,9 +65,15 @@ public sealed class SerializableDatabase<T> : CronusDatabase<T> {
     /// <remarks>
     /// This is the main way to perform cache invalidation.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">If the value of certain key could not be converted back using "FromStringConverter"</exception>
     public override void RemoveAny(Func<T, bool> selector) {
         foreach (var (k, v) in _data) {
-            var converted = _config!.FromStringConverter.Invoke(v);
+            var converted = default(T);
+            try {
+                converted = _config!.FromStringConverter.Invoke(v);
+            } catch {
+                throw new InvalidOperationException($"Converting the value of key <{k}> failed.");
+            }
             if (selector.Invoke(converted)) {
                 Remove(k);
             }
@@ -76,5 +89,16 @@ public sealed class SerializableDatabase<T> : CronusDatabase<T> {
             return;
         }
         await SerializeWithEncryptionAsync(_data, _config);
+    }
+
+    /// <summary>
+    /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
+    /// </summary>
+    public override void Serialize() {
+        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
+            SerializeWithoutEncryption(_data, _config);
+            return;
+        }
+        SerializeWithEncryption(_data, _config);
     }
 }

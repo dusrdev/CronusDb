@@ -69,11 +69,18 @@ public sealed class SerializableInMemoryDatabase<T> : CronusDatabase<T> {
     /// <summary>
     /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
     /// </summary>
+    /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override async Task SerializeAsync() {
         var output = new Dictionary<string, string>();
 
         foreach (var (k, v) in _data) {
-            output.Add(k, _config!.ToStringConverter(v));
+            var str = string.Empty;
+            try {
+                str = _config!.ToStringConverter(v);
+            } catch {
+                throw new InvalidOperationException($"Converting the value of key <{k}> failed.");
+            }
+            output.Add(k, str);
         }
 
         if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
@@ -81,5 +88,29 @@ public sealed class SerializableInMemoryDatabase<T> : CronusDatabase<T> {
             return;
         }
         await SerializeWithEncryptionAsync(output, _config);
+    }
+
+    /// <summary>
+    /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
+    public override void Serialize() {
+        var output = new Dictionary<string, string>();
+
+        foreach (var (k, v) in _data) {
+            var str = string.Empty;
+            try {
+                str = _config!.ToStringConverter(v);
+            } catch {
+                throw new InvalidOperationException($"Converting the value of key <{k}> failed.");
+            }
+            output.Add(k, str);
+        }
+
+        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
+            SerializeWithoutEncryption(output, _config!);
+            return;
+        }
+        SerializeWithEncryption(output, _config);
     }
 }
