@@ -3,6 +3,6 @@
 namespace CronusDb;
 
 [JsonSourceGenerationOptions(IncludeFields = true)]
-[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(IDictionary<string, string>))]
 internal partial class JsonContexts : JsonSerializerContext {
 }
