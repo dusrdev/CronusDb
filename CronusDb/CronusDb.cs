@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace CronusDb;
@@ -36,10 +37,10 @@ public static class CronusDb {
             return new SerializableInMemoryDatabase<T>(new(), configuration);
         }
 
-        var output = new Dictionary<string, T>();
+        var output = new ConcurrentDictionary<string, T>();
 
         foreach (var (k, v) in dict) {
-            output.Add(k, configuration.FromStringConverter(v));
+            _ = output.TryAdd(k, configuration.FromStringConverter(v));
         }
 
         return new SerializableInMemoryDatabase<T>(output, configuration);
@@ -66,21 +67,21 @@ public static class CronusDb {
             return new SerializableDatabase<T>(new(), configuration);
         }
 
-        return new SerializableDatabase<T>(dict, configuration);
+        return new SerializableDatabase<T>(new(dict), configuration);
     }
 
-    private static async Task<Dictionary<string, string>?> DeserializeWithEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config) {
+    private static async Task<IDictionary<string, string>?> DeserializeWithEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config) {
         using var aes = new CronusAesProvider(config.EncryptionKey!);
         using var decrypter = aes.GetDecrypter();
         using var fileStream = new FileStream(config.Path, FileMode.Open);
         using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
         using var streamReader = new StreamReader(cryptoStream);
         var json = await streamReader.ReadToEndAsync();
-        return JsonSerializer.Deserialize(json, JsonContexts.Default.DictionaryStringString);
+        return JsonSerializer.Deserialize(json, JsonContexts.Default.IDictionaryStringString);
     }
 
-    private static async Task<Dictionary<string, string>?> DeserializeWithoutEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config) {
+    private static async Task<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config) {
         using var stream = new FileStream(config!.Path, FileMode.Open);
-        return await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.DictionaryStringString);
+        return await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.IDictionaryStringString);
     }
 }
