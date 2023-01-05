@@ -78,6 +78,21 @@ public abstract class CronusDatabase<T> {
     /// </summary>
     public abstract Task SerializeAsync();
 
+    /// <summary>
+    /// Saves the database to the hard disk.
+    /// </summary>
+    public abstract void Serialize();
+
+    internal virtual void SerializeWithEncryption(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
+        using var aes = new CronusAesProvider(config.EncryptionKey!);
+        using var encrypter = aes.GetEncrypter();
+        using var fileStream = new FileStream(config.Path, FileMode.OpenOrCreate);
+        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
+        using var streamWriter = new StreamWriter(cryptoStream);
+        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
+        streamWriter.Write(json);
+    }
+
     internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
         using var aes = new CronusAesProvider(config.EncryptionKey!);
         using var encrypter = aes.GetEncrypter();
@@ -86,6 +101,11 @@ public abstract class CronusDatabase<T> {
         using var streamWriter = new StreamWriter(cryptoStream);
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
         await streamWriter.WriteAsync(json);
+    }
+
+    internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
+        using var stream = new FileStream(config.Path, FileMode.Create);
+        JsonSerializer.Serialize(stream, data, JsonContexts.Default.IDictionaryStringString);
     }
 
     internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
