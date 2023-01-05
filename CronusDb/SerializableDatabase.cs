@@ -1,11 +1,17 @@
-﻿namespace CronusDb;
+﻿using System.Collections.Concurrent;
 
+namespace CronusDb;
+
+/// <summary>
+/// Serializable database, everything is stored after being serialized to improve disk operation performance.
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public sealed class SerializableDatabase<T> : CronusDatabase<T> {
-    private readonly Dictionary<string, string> _data;
+    private readonly ConcurrentDictionary<string, string> _data;
     private readonly SerializableDatabaseConfiguration<T>? _config;
 
     // This constructor is used for a serializable instance
-    internal SerializableDatabase(Dictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
+    internal SerializableDatabase(ConcurrentDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
         _data = data;
         _config = config;
     }
@@ -38,7 +44,7 @@ public sealed class SerializableDatabase<T> : CronusDatabase<T> {
     /// <param name="key"></param>
     /// <returns>True if successful, false if database did not contain <paramref name="key"/>.</returns>
     public override bool Remove(string key) {
-        var output = _data.Remove(key);
+        var output = _data.Remove(key, out _);
         if (output) {
             OnItemRemoved(EventArgs.Empty);
         }

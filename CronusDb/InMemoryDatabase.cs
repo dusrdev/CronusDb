@@ -1,10 +1,16 @@
-﻿namespace CronusDb;
+﻿using System.Collections.Concurrent;
 
+namespace CronusDb;
+
+/// <summary>
+/// In memory database, no disk operation, maximum CRUD performance.
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public sealed class InMemoryDatabase<T> : CronusDatabase<T> {
-    private readonly Dictionary<string, T> _data;
+    private readonly ConcurrentDictionary<string, T> _data;
 
     // This constructor is used for an In-Memory only instance
-    internal InMemoryDatabase(Dictionary<string, T> data) {
+    internal InMemoryDatabase(ConcurrentDictionary<string, T> data) {
         _data = data;
     }
 
@@ -36,7 +42,7 @@ public sealed class InMemoryDatabase<T> : CronusDatabase<T> {
     /// <param name="key"></param>
     /// <returns>True if successful, false if database did not contain <paramref name="key"/>.</returns>
     public override bool Remove(string key) {
-        var output = _data.Remove(key);
+        var output = _data.Remove(key, out _);
         if (output) {
             OnItemRemoved(EventArgs.Empty);
         }
