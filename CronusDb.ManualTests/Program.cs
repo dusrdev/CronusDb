@@ -9,13 +9,13 @@ using System.Diagnostics;
 //    FromStringConverter = static x => int.Parse(x)
 //};
 
-//var db = await CronusDb<int>.Create(config);
+//var db = await CronusDatabase<int>.Create(config);
 
 //db.Upsert("David", 25);
 
 //await db.SerializeAsync();
 
-//var rdb = await CronusDb<int>.Create(config);
+//var rdb = await CronusDatabase<int>.Create(config);
 
 //Console.WriteLine($"David => {rdb.Get("David")}");
 

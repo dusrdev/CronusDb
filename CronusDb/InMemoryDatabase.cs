@@ -6,7 +6,7 @@ namespace CronusDb;
 /// In memory database, no disk operation, maximum CRUD performance.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public sealed class InMemoryDatabase<T> : CronusDatabase<T> {
+public sealed class InMemoryDatabase<T> : CronusBase<T> {
     private readonly ConcurrentDictionary<string, T> _data;
 
     // This constructor is used for an In-Memory only instance

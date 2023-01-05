@@ -1,115 +1,184 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace CronusDb;
 
 /// <summary>
-/// Base type for the database
+/// Main entry point for database creation
 /// </summary>
-/// <typeparam name="T"></typeparam>
-public abstract class CronusDatabase<T> {
+public static class CronusDatabase {
     /// <summary>
-    /// Triggered when an item is upserted.
+    /// Creates and returns a new instance of an In-Memory only database
     /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public static InMemoryDatabase<T> CreateInMemoryDatabase<T>() {
+        return new InMemoryDatabase<T>(new());
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of an In-Memory only database
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public static Task<InMemoryDatabase<T>> CreateInMemoryDatabaseAsync<T>() {
+        return Task.FromResult(new InMemoryDatabase<T>(new()));
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of an Serializable in-Memory database
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="configuration"></param>
     /// <remarks>
-    /// You can use this to hook cache invalidation with <see cref="RemoveAny(Func{T, bool})"/>.
+    /// This is a serializable database with In-Memory only CRUD performance, but serialization is slower and less memory efficient than <see cref="SerializableDatabase{T}"/>
     /// </remarks>
-    public event EventHandler? ItemUpserted;
+    public static SerializableInMemoryDatabase<T> CreateSerializableInMemoryDatabase<T>(SerializableDatabaseConfiguration<T> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new SerializableInMemoryDatabase<T>(new(), configuration);
+        }
 
-    internal virtual void OnItemUpserted(EventArgs e) {
-        ItemUpserted?.Invoke(this, e);
+        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
+            DeserializeWithoutEncyption(configuration)
+            : DeserializeWithEncyption(configuration);
+
+        if (dict is null) {
+            return new SerializableInMemoryDatabase<T>(new(), configuration);
+        }
+
+        var output = new ConcurrentDictionary<string, T>();
+
+        foreach (var (k, v) in dict) {
+            _ = output.TryAdd(k, configuration.FromStringConverter(v));
+        }
+
+        return new SerializableInMemoryDatabase<T>(output, configuration);
     }
 
     /// <summary>
-    /// Triggered when an item is removed.
+    /// Creates and returns a new instance of an Serializable in-Memory database
     /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="configuration"></param>
     /// <remarks>
-    /// You can use this to hook cache invalidation with <see cref="RemoveAny(Func{T, bool})"/>.
+    /// This is a serializable database with In-Memory only CRUD performance, but serialization is slower and less memory efficient than <see cref="SerializableDatabase{T}"/>
     /// </remarks>
-    public event EventHandler? ItemRemoved;
+    public static async Task<SerializableInMemoryDatabase<T>> CreateSerializableInMemoryDatabaseAsync<T>(SerializableDatabaseConfiguration<T> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new SerializableInMemoryDatabase<T>(new(), configuration);
+        }
 
-    internal virtual void OnItemRemoved(EventArgs e) {
-        ItemRemoved?.Invoke(this, e);
+        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
+            await DeserializeWithoutEncyptionAsync(configuration)
+            : await DeserializeWithEncyptionAsync(configuration);
+
+        if (dict is null) {
+            return new SerializableInMemoryDatabase<T>(new(), configuration);
+        }
+
+        var output = new ConcurrentDictionary<string, T>();
+
+        foreach (var (k, v) in dict) {
+            _ = output.TryAdd(k, configuration.FromStringConverter(v));
+        }
+
+        return new SerializableInMemoryDatabase<T>(output, configuration);
     }
 
     /// <summary>
-    /// Checked whether the inner dictionary contains the <paramref name="key"/>.
+    /// Creates and returns a new instance of an Serializable database
     /// </summary>
-    /// <param name="key"></param>
-    public abstract bool ContainsKey(string key);
+    /// <typeparam name="T"></typeparam>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// This is a serializable database with slightly slower than In-Memory only CRUD performance, but serialization is drastically faster and more efficient than <see cref="SerializableInMemoryDatabase{T}"/>
+    /// </remarks>
+    public static SerializableDatabase<T> CreateSerializableDatabase<T>(SerializableDatabaseConfiguration<T> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new SerializableDatabase<T>(new(), configuration);
+        }
 
-    /// <summary>
-    /// Returns the value for the <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    public abstract T? Get(string key);
+        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
+            DeserializeWithoutEncyption(configuration)
+            : DeserializeWithEncyption(configuration);
 
-    /// <summary>
-    /// Updates or inserts a new <paramref name="value"/> with the <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    public abstract void Upsert(string key,[DisallowNull] T value);
+        if (dict is null) {
+            return new SerializableDatabase<T>(new(), configuration);
+        }
 
-    /// <summary>
-    /// An indexer option for <see cref="Get(string)"/> and <see cref="Upsert(string, T)"/>.
-    /// </summary>
-    /// <param name="index"></param>
-    public virtual T? this[string index] {
-        get => Get(index);
-        set => Upsert(index, value!);
+        return new SerializableDatabase<T>(new(dict), configuration);
     }
 
     /// <summary>
-    /// Removes the <paramref name="key"/> and its value from the inner dictionary.
+    /// Creates and returns a new instance of an Serializable database
     /// </summary>
-    /// <param name="key"></param>
-    public abstract bool Remove(string key);
+    /// <typeparam name="T"></typeparam>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// This is a serializable database with slightly slower than In-Memory only CRUD performance, but serialization is drastically faster and more efficient than <see cref="SerializableInMemoryDatabase{T}"/>
+    /// </remarks>
+    public static async Task<SerializableDatabase<T>> CreateSerializableDatabaseAsync<T>(SerializableDatabaseConfiguration<T> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new SerializableDatabase<T>(new(), configuration);
+        }
 
-    /// <summary>
-    /// Removes all the keys and values in the dictionary for which the value passes the <paramref name="selector"/>.
-    /// </summary>
-    /// <param name="selector"></param>
-    public abstract void RemoveAny(Func<T, bool> selector);
+        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
+            await DeserializeWithoutEncyptionAsync(configuration)
+            : await DeserializeWithEncyptionAsync(configuration);
 
-    /// <summary>
-    /// Saves the database to the hard disk.
-    /// </summary>
-    public abstract Task SerializeAsync();
+        if (dict is null) {
+            return new SerializableDatabase<T>(new(), configuration);
+        }
 
-    /// <summary>
-    /// Saves the database to the hard disk.
-    /// </summary>
-    public abstract void Serialize();
-
-    internal virtual void SerializeWithEncryption(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var aes = new CronusAesProvider(config.EncryptionKey!);
-        using var encrypter = aes.GetEncrypter();
-        using var fileStream = new FileStream(config.Path, FileMode.OpenOrCreate);
-        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
-        using var streamWriter = new StreamWriter(cryptoStream);
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        streamWriter.Write(json);
+        return new SerializableDatabase<T>(new(dict), configuration);
     }
 
-    internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var aes = new CronusAesProvider(config.EncryptionKey!);
-        using var encrypter = aes.GetEncrypter();
-        using var fileStream = new FileStream(config.Path, FileMode.OpenOrCreate);
-        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
-        using var streamWriter = new StreamWriter(cryptoStream);
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        await streamWriter.WriteAsync(json);
+    private static IDictionary<string, string>? DeserializeWithEncyption<T>(SerializableDatabaseConfiguration<T> config) {
+        try {
+            using var aes = new CronusAesProvider(config.EncryptionKey!);
+            using var decrypter = aes.GetDecrypter();
+            using var fileStream = new FileStream(config.Path, FileMode.Open);
+            using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
+            using var streamReader = new StreamReader(cryptoStream);
+            var json = streamReader.ReadToEnd();
+            return JsonSerializer.Deserialize(json, JsonContexts.Default.IDictionaryStringString);
+        } catch {
+            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+        }
     }
 
-    internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var stream = new FileStream(config.Path, FileMode.Create);
-        JsonSerializer.Serialize(stream, data, JsonContexts.Default.IDictionaryStringString);
+    private static async Task<IDictionary<string, string>?> DeserializeWithEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config, CancellationToken token = default) {
+        try {
+            using var aes = new CronusAesProvider(config.EncryptionKey!);
+            using var decrypter = aes.GetDecrypter();
+            using var fileStream = new FileStream(config.Path, FileMode.Open);
+            using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
+            using var streamReader = new StreamReader(cryptoStream);
+            var json = await streamReader.ReadToEndAsync(token);
+            return JsonSerializer.Deserialize(json, JsonContexts.Default.IDictionaryStringString);
+        } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
+            throw;
+        } catch {
+            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+        }
     }
 
-    internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var stream = new FileStream(config.Path, FileMode.Create);
-        await JsonSerializer.SerializeAsync(stream, data, JsonContexts.Default.IDictionaryStringString);
+    private static IDictionary<string, string>? DeserializeWithoutEncyption<T>(SerializableDatabaseConfiguration<T> config) {
+        try {
+            using var stream = new FileStream(config!.Path, FileMode.Open);
+            return JsonSerializer.Deserialize(stream, JsonContexts.Default.IDictionaryStringString);
+        } catch {
+            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+        }
+    }
+
+    private static async ValueTask<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config, CancellationToken token = default) {
+        try {
+            using var stream = new FileStream(config!.Path, FileMode.Open);
+            return await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.IDictionaryStringString, token);
+        } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
+            throw;
+        } catch {
+            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+        }
     }
 }

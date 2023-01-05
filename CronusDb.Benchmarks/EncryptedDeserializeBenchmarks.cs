@@ -24,9 +24,9 @@ public class EncryptedDeserializeBenchmarks {
 
     [GlobalSetup]
     public async Task Setup() {
-        UserDb = await CronusDb.CreateSerializableDatabaseAsync(_userConfig);
+        UserDb = await CronusDatabase.CreateSerializableDatabaseAsync(_userConfig);
 
-        EncryptedDb = await CronusDb.CreateSerializableDatabaseAsync(_encryptedConfig);
+        EncryptedDb = await CronusDatabase.CreateSerializableDatabaseAsync(_encryptedConfig);
 
         foreach (var num in Enumerable.Range(1, 1001)) {
             var user = new User {
@@ -43,8 +43,8 @@ public class EncryptedDeserializeBenchmarks {
     }
 
     [Benchmark(Baseline = true)]
-    public async Task Deserialize() => _ = await CronusDb.CreateSerializableDatabaseAsync(_userConfig);
+    public async Task Deserialize() => _ = await CronusDatabase.CreateSerializableDatabaseAsync(_userConfig);
 
     [Benchmark]
-    public async Task DeserializeEncrypted() => _ = await CronusDb.CreateSerializableDatabaseAsync(_encryptedConfig);
+    public async Task DeserializeEncrypted() => _ = await CronusDatabase.CreateSerializableDatabaseAsync(_encryptedConfig);
 }

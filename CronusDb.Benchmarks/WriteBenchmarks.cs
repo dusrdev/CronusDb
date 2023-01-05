@@ -9,7 +9,7 @@ public class WriteBenchmarks {
 
     [GlobalSetup]
     public void Setup() {
-        UserDb = CronusDb.CreateInMemoryDatabase<User>();
+        UserDb = CronusDatabase.CreateInMemoryDatabase<User>();
     }
 
     [Benchmark]

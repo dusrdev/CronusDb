@@ -6,7 +6,7 @@ namespace CronusDb;
 /// Serializable database, everything is stored after being serialized to improve disk operation performance.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public sealed class SerializableDatabase<T> : CronusDatabase<T> {
+public sealed class SerializableDatabase<T> : CronusBase<T> {
     private readonly ConcurrentDictionary<string, string> _data;
     private readonly SerializableDatabaseConfiguration<T>? _config;
 
