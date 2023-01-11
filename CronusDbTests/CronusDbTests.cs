@@ -1,122 +1,122 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CronusDb.Tests {
-    [TestClass]
-    public class CronusDbTests {
-        [TestMethod]
-        public async Task GeneralTest_CreateAddSerializeDeserialize() {
-            var config = new SerializableDatabaseConfiguration<int>() {
-                Path = @".\temp.db",
-                ToStringConverter = static x => x.ToString(),
-                FromStringConverter = static x => int.Parse(x)
-            };
+namespace CronusDb.Tests;
 
-            var db = await CronusDatabase.CreateSerializableDatabaseAsync(config);
+[TestClass]
+public class CronusDbTests {
+    [TestMethod]
+    public async Task GeneralTest_CreateAddSerializeDeserialize() {
+        var config = new SerializableDatabaseConfiguration<int>() {
+            Path = @".\temp.db",
+            ToStringConverter = static x => x.ToString(),
+            FromStringConverter = static x => int.Parse(x)
+        };
 
-            db.Upsert("David", 25);
-            db.Upsert("Ben", 28);
-            db.Upsert("Nick", 37);
-            db.Upsert("Alex", 63);
+        var db = await CronusDatabase.CreateSerializableDatabaseAsync(config);
 
-            await db.SerializeAsync();
+        db.Upsert("David", 25);
+        db.Upsert("Ben", 28);
+        db.Upsert("Nick", 37);
+        db.Upsert("Alex", 63);
 
-            var rdb = await CronusDatabase.CreateSerializableDatabaseAsync(config);
+        await db.SerializeAsync();
 
-            Assert.AreEqual(25, rdb.Get("David"));
-            Assert.AreEqual(28, rdb.Get("Ben"));
-            Assert.AreEqual(37, rdb.Get("Nick"));
-            Assert.AreEqual(63, rdb.Get("Alex"));
-        }
+        var rdb = await CronusDatabase.CreateSerializableDatabaseAsync(config);
 
-        [TestMethod]
-        public async Task GeneralTestEncrypted_CreateAddSerializeDeserialize() {
-            var config = new SerializableDatabaseConfiguration<int>() {
-                Path = @".\encrypted.db",
-                EncryptionKey = "1q2w3e4r5t",
-                ToStringConverter = static x => x.ToString(),
-                FromStringConverter = static x => int.Parse(x)
-            };
+        Assert.AreEqual(25, rdb.Get("David"));
+        Assert.AreEqual(28, rdb.Get("Ben"));
+        Assert.AreEqual(37, rdb.Get("Nick"));
+        Assert.AreEqual(63, rdb.Get("Alex"));
+    }
 
-            var db = await CronusDatabase.CreateSerializableDatabaseAsync(config);
+    [TestMethod]
+    public void GeneralTestEncrypted_CreateAddSerializeDeserialize() {
+        var config = new SerializableDatabaseConfiguration<int>() {
+            Path = @".\encrypted.db",
+            EncryptionKey = "1q2w3e4r5t",
+            ToStringConverter = static x => x.ToString(),
+            FromStringConverter = static x => int.Parse(x)
+        };
 
-            db.Upsert("David", 25);
-            db.Upsert("Ben", 28);
-            db.Upsert("Nick", 37);
-            db.Upsert("Alex", 63);
+        var db = CronusDatabase.CreateSerializableDatabase(config);
 
-            await db.SerializeAsync();
+        db.Upsert("David", 25);
+        db.Upsert("Ben", 28);
+        db.Upsert("Nick", 37);
+        db.Upsert("Alex", 63);
 
-            var rdb = await CronusDatabase.CreateSerializableDatabaseAsync(config);
+        db.Serialize();
 
-            Assert.AreEqual(25, rdb.Get("David"));
-            Assert.AreEqual(28, rdb.Get("Ben"));
-            Assert.AreEqual(37, rdb.Get("Nick"));
-            Assert.AreEqual(63, rdb.Get("Alex"));
-        }
+        var rdb = CronusDatabase.CreateSerializableDatabase(config);
 
-        [TestMethod]
-        public void UpsertTest() {
-            var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        Assert.AreEqual(25, rdb.Get("David"));
+        Assert.AreEqual(28, rdb.Get("Ben"));
+        Assert.AreEqual(37, rdb.Get("Nick"));
+        Assert.AreEqual(63, rdb.Get("Alex"));
+    }
 
-            db.Upsert("David", 25);
+    [TestMethod]
+    public void UpsertTest() {
+        var db = CronusDatabase.CreateInMemoryDatabase<int>();
 
-            Assert.IsTrue(db.ContainsKey("David"));
-        }
+        db.Upsert("David", 25);
 
-        [TestMethod]
-        public void RemoveTest() {
-            var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        Assert.IsTrue(db.ContainsKey("David"));
+    }
 
-            db.Upsert("David", 25);
+    [TestMethod]
+    public void RemoveTest() {
+        var db = CronusDatabase.CreateInMemoryDatabase<int>();
 
-            db.Remove("David");
+        db.Upsert("David", 25);
 
-            Assert.IsFalse(db.ContainsKey("David"));
-        }
+        db.Remove("David");
 
-        [TestMethod]
-        public void RemoveAnyTest() {
-            var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        Assert.IsFalse(db.ContainsKey("David"));
+    }
 
-            db.Upsert("David", 25);
-            db.Upsert("Ben", 28);
-            db.Upsert("Nick", 37);
-            db.Upsert("Alex", 63);
+    [TestMethod]
+    public void RemoveAnyTest() {
+        var db = CronusDatabase.CreateInMemoryDatabase<int>();
 
-            db.RemoveAny(static x => x > 30);
+        db.Upsert("David", 25);
+        db.Upsert("Ben", 28);
+        db.Upsert("Nick", 37);
+        db.Upsert("Alex", 63);
 
-            Assert.IsTrue(db.ContainsKey("David"));
-            Assert.IsTrue(db.ContainsKey("Ben"));
-            Assert.IsFalse(db.ContainsKey("Nick"));
-            Assert.IsFalse(db.ContainsKey("Alex"));
-        }
+        db.RemoveAny(static x => x > 30);
 
-        [TestMethod]
-        public void UpsertEventTest() {
-            var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        Assert.IsTrue(db.ContainsKey("David"));
+        Assert.IsTrue(db.ContainsKey("Ben"));
+        Assert.IsFalse(db.ContainsKey("Nick"));
+        Assert.IsFalse(db.ContainsKey("Alex"));
+    }
 
-            bool triggered = false;
+    [TestMethod]
+    public void UpsertEventTest() {
+        var db = CronusDatabase.CreateInMemoryDatabase<int>();
 
-            db.ItemUpserted += (_, _) => triggered = true;
+        bool triggered = false;
 
-            db.Upsert("David", 25);
+        db.ItemUpserted += (_, _) => triggered = true;
 
-            Assert.IsTrue(triggered);
-        }
+        db.Upsert("David", 25);
 
-        [TestMethod]
-        public void RemoveEventTest() {
-            var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        Assert.IsTrue(triggered);
+    }
 
-            bool triggered = false;
+    [TestMethod]
+    public void RemoveEventTest() {
+        var db = CronusDatabase.CreateInMemoryDatabase<int>();
 
-            db.Upsert("David", 25);
+        bool triggered = false;
 
-            db.ItemRemoved += (_, _) => triggered = true;
+        db.Upsert("David", 25);
 
-            db.Remove("David");
+        db.ItemRemoved += (_, _) => triggered = true;
 
-            Assert.IsTrue(triggered);
-        }
+        db.Remove("David");
+
+        Assert.IsTrue(triggered);
     }
 }
