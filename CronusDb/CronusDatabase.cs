@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace CronusDb;
@@ -38,8 +37,8 @@ public static class CronusDatabase {
         }
 
         var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            DeserializeWithoutEncyption(configuration)
-            : DeserializeWithEncyption(configuration);
+            DeserializeWithoutEncyption(configuration.Path)
+            : DeserializeWithEncyption(configuration.Path, configuration.EncryptionKey);
 
         if (dict is null) {
             return new SerializableInMemoryDatabase<T>(new(), configuration);
@@ -68,8 +67,8 @@ public static class CronusDatabase {
         }
 
         var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            await DeserializeWithoutEncyptionAsync(configuration)
-            : await DeserializeWithEncyptionAsync(configuration);
+            await DeserializeWithoutEncyptionAsync(configuration.Path)
+            : await DeserializeWithEncyptionAsync(configuration.Path, configuration.EncryptionKey);
 
         if (dict is null) {
             return new SerializableInMemoryDatabase<T>(new(), configuration);
@@ -82,6 +81,29 @@ public static class CronusDatabase {
         }
 
         return new SerializableInMemoryDatabase<T>(output, configuration);
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of an Polymorphic database
+    /// </summary>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// This is a serializable database with that enables per key and global encryption, and removes value serializers so you could use different ones per value, enabled multi-type values.
+    /// </remarks>
+    public static async ValueTask<PolymorphicDatabase> CreatePolymorphicDatabaseAsync(PolymorphicConfiguration configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new PolymorphicDatabase(new(), configuration);
+        }
+
+        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
+            await DeserializeWithoutEncyptionAsync(configuration.Path)
+            : await DeserializeWithEncyptionAsync(configuration.Path, configuration.EncryptionKey);
+
+        if (dict is null) {
+            return new PolymorphicDatabase(new(), configuration);
+        }
+
+        return new PolymorphicDatabase(new(dict), configuration);
     }
 
     /// <summary>
@@ -98,8 +120,8 @@ public static class CronusDatabase {
         }
 
         var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            DeserializeWithoutEncyption(configuration)
-            : DeserializeWithEncyption(configuration);
+            DeserializeWithoutEncyption(configuration.Path)
+            : DeserializeWithEncyption(configuration.Path, configuration.EncryptionKey);
 
         if (dict is null) {
             return new SerializableDatabase<T>(new(), configuration);
@@ -122,8 +144,8 @@ public static class CronusDatabase {
         }
 
         var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            await DeserializeWithoutEncyptionAsync(configuration)
-            : await DeserializeWithEncyptionAsync(configuration);
+            await DeserializeWithoutEncyptionAsync(configuration.Path)
+            : await DeserializeWithEncyptionAsync(configuration.Path, configuration.EncryptionKey);
 
         if (dict is null) {
             return new SerializableDatabase<T>(new(), configuration);
@@ -132,53 +154,60 @@ public static class CronusDatabase {
         return new SerializableDatabase<T>(new(dict), configuration);
     }
 
-    private static IDictionary<string, string>? DeserializeWithEncyption<T>(SerializableDatabaseConfiguration<T> config) {
+    private static IDictionary<string, string>? DeserializeWithEncyption(string path, string encryptionKey) {
         try {
-            using var aes = new CronusAesProvider(config.EncryptionKey!);
-            using var decrypter = aes.GetDecrypter();
-            using var fileStream = new FileStream(config.Path, FileMode.Open);
-            using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
-            using var streamReader = new StreamReader(cryptoStream);
-            var json = streamReader.ReadToEnd();
-            return JsonSerializer.Deserialize(json, JsonContexts.Default.IDictionaryStringString);
+            var content = File.ReadAllText(path);
+            if (string.IsNullOrWhiteSpace(content)) {
+                return default;
+            }
+            var decrypted = content.Decrypt(encryptionKey!);
+            return JsonSerializer.Deserialize(decrypted, JsonContexts.Default.IDictionaryStringString);
         } catch {
-            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+            throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
     }
 
-    private static async Task<IDictionary<string, string>?> DeserializeWithEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config, CancellationToken token = default) {
+    private static async ValueTask<IDictionary<string, string>?> DeserializeWithEncyptionAsync(string path, string encryptionKey, CancellationToken token = default) {
         try {
-            using var aes = new CronusAesProvider(config.EncryptionKey!);
-            using var decrypter = aes.GetDecrypter();
-            using var fileStream = new FileStream(config.Path, FileMode.Open);
-            using var cryptoStream = new CryptoStream(fileStream, decrypter!, CryptoStreamMode.Read);
-            using var streamReader = new StreamReader(cryptoStream);
-            var json = await streamReader.ReadToEndAsync(token);
-            return JsonSerializer.Deserialize(json, JsonContexts.Default.IDictionaryStringString);
+            var content = await File.ReadAllTextAsync(path, token);
+            if (string.IsNullOrWhiteSpace(content)) {
+                return default;
+            }
+            var decrypted = content.Decrypt(encryptionKey!);
+            return JsonSerializer.Deserialize(decrypted, JsonContexts.Default.IDictionaryStringString);
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             throw;
         } catch {
-            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+            throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
     }
 
-    private static IDictionary<string, string>? DeserializeWithoutEncyption<T>(SerializableDatabaseConfiguration<T> config) {
+    private static IDictionary<string, string>? DeserializeWithoutEncyption(string path) {
         try {
-            using var stream = new FileStream(config!.Path, FileMode.Open);
-            return JsonSerializer.Deserialize(stream, JsonContexts.Default.IDictionaryStringString);
+            var content = File.ReadAllText(path);
+            if (string.IsNullOrWhiteSpace(content)) {
+                return default;
+            }
+            return JsonSerializer.Deserialize(content, JsonContexts.Default.IDictionaryStringString);
         } catch {
-            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+            throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
     }
 
-    private static async ValueTask<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync<T>(SerializableDatabaseConfiguration<T> config, CancellationToken token = default) {
+    private static async ValueTask<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync(string path, CancellationToken token = default) {
         try {
-            using var stream = new FileStream(config!.Path, FileMode.Open);
-            return await JsonSerializer.DeserializeAsync(stream, JsonContexts.Default.IDictionaryStringString, token);
+            if (!File.Exists(path)) {
+                return default;
+            }
+            var content = await File.ReadAllTextAsync(path, token);
+            if (string.IsNullOrWhiteSpace(content)) {
+                return default;
+            }
+            return JsonSerializer.Deserialize(content, JsonContexts.Default.IDictionaryStringString);
         } catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             throw;
         } catch {
-            throw new InvalidDataException($"Could not deserialize the database from <{config.Path}>");
+            throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
     }
 }
