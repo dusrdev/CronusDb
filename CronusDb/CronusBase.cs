@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace CronusDb;
@@ -84,32 +83,24 @@ public abstract class CronusBase<T> {
     public abstract void Serialize();
 
     internal virtual void SerializeWithEncryption(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var aes = new CronusAesProvider(config.EncryptionKey!);
-        using var encrypter = aes.GetEncrypter();
-        using var fileStream = new FileStream(config.Path, FileMode.OpenOrCreate);
-        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
-        using var streamWriter = new StreamWriter(cryptoStream);
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        streamWriter.Write(json);
+        var encrypted = json.Encrypt(config.EncryptionKey!);
+        File.WriteAllText(config.Path, encrypted);
     }
 
     internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var aes = new CronusAesProvider(config.EncryptionKey!);
-        using var encrypter = aes.GetEncrypter();
-        using var fileStream = new FileStream(config.Path, FileMode.OpenOrCreate);
-        using var cryptoStream = new CryptoStream(fileStream, encrypter, CryptoStreamMode.Write);
-        using var streamWriter = new StreamWriter(cryptoStream);
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        await streamWriter.WriteAsync(json);
+        var encrypted = json.Encrypt(config.EncryptionKey!);
+        await File.WriteAllTextAsync(config.Path, encrypted);
     }
 
     internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var stream = new FileStream(config.Path, FileMode.Create);
-        JsonSerializer.Serialize(stream, data, JsonContexts.Default.IDictionaryStringString);
+        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
+        File.WriteAllText(config.Path, json);
     }
 
     internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, SerializableDatabaseConfiguration<T> config) {
-        using var stream = new FileStream(config.Path, FileMode.Create);
-        await JsonSerializer.SerializeAsync(stream, data, JsonContexts.Default.IDictionaryStringString);
+        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
+        await File.WriteAllTextAsync(config.Path, json);
     }
 }
