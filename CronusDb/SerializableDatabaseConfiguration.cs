@@ -1,5 +1,9 @@
 ﻿namespace CronusDb;
 
+/// <summary>
+/// Configuration for serializable databases
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public record SerializableDatabaseConfiguration<T> {
     /// <summary>
     /// The path to the database file, including extension.
