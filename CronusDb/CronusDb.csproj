@@ -8,5 +8,17 @@
     <Authors>David Shnayder</Authors>
     <Copyright>David Shnayder - 2022</Copyright>
   </PropertyGroup>
+	
+ <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+    <_Parameter1>CronusDbTests</_Parameter1>
+    </AssemblyAttribute>
+	 <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+		 <_Parameter1>CronusDb.ManualTests</_Parameter1>
+	 </AssemblyAttribute>
+	 <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+		 <_Parameter1>CronusDb.Benchmarks</_Parameter1>
+	 </AssemblyAttribute>
+  </ItemGroup>
 
 </Project>
