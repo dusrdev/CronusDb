@@ -14,6 +14,13 @@ public sealed class PolymorphicDatabase : PolymorphicBase {
         _config = config;
     }
 
+    internal override void OnDataChanged(DataChangedEventArgs e) {
+        base.OnDataChanged(e);
+        if (_config.SerializeOnUpdate) {
+            Serialize();
+        }
+    }
+
     /// <summary>
     /// Checked whether the inner dictionary contains the <paramref name="key" />.
     /// </summary>
@@ -39,7 +46,18 @@ public sealed class PolymorphicDatabase : PolymorphicBase {
     /// Removes the <paramref name="key" /> and its value from the inner dictionary.
     /// </summary>
     /// <param name="key"></param>
-    public override bool Remove(string key) => _data.Remove(key, out _);
+    public override bool Remove(string key) {
+        var result = _data.TryRemove(key, out var val);
+        if (!result) {
+            return false;
+        }
+        OnDataChanged(new DataChangedEventArgs {
+            Key = key,
+            Value = val,
+            ChangeType = DataChangeType.Remove
+        });
+        return true;
+    }
 
     /// <summary>
     /// Saves the database to the hard disk.
@@ -71,10 +89,12 @@ public sealed class PolymorphicDatabase : PolymorphicBase {
     /// <param name="encryptionKey">individual encryption key for this specific value</param>
     public override void Upsert(string key, [DisallowNull] string value, string? encryptionKey = null) {
         ArgumentException.ThrowIfNullOrEmpty(value);
-        if (encryptionKey is null) {
-            _data[key] = value;
-            return;
-        }
-        _data[key] = value.Encrypt(encryptionKey);
+        var isUpdate = _data.ContainsKey(key);
+        _data[key] = encryptionKey is null ? value : value.Encrypt(encryptionKey);
+        OnDataChanged(new DataChangedEventArgs {
+            Key = key,
+            Value = value,
+            ChangeType = isUpdate ? DataChangeType.Update : DataChangeType.Insert
+        });
     }
 }
