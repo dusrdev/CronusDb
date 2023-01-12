@@ -45,7 +45,7 @@ public static class Cronus {
     /// <remarks>
     /// This is a serializable database with fast crud operations and better invalidation using <see cref="GenericDatabase{T}.RemoveAny(Func{T, bool})"/>
     /// </remarks>
-    public static async Task<CronusGenericDatabase<T>> CreateGenericDatabaseAsync<T>(GenericDatabaseConfiguration<T> configuration) {
+    public static async ValueTask<CronusGenericDatabase<T>> CreateGenericDatabaseAsync<T>(GenericDatabaseConfiguration<T> configuration) {
         if (!File.Exists(configuration.Path)) {
             return new CronusGenericDatabase<T>(new(), configuration);
         }
@@ -118,7 +118,7 @@ public static class Cronus {
         return DeserializeDict(content, path, encryptionKey);
     }
 
-    private static async ValueTask<IDictionary<string, string>?> DeserializeWithEncyptionAsync(string path, string encryptionKey, CancellationToken token = default) {
+    private static async Task<IDictionary<string, string>?> DeserializeWithEncyptionAsync(string path, string encryptionKey, CancellationToken token = default) {
         var content = await File.ReadAllTextAsync(path, token);
         return DeserializeDict(content, path, encryptionKey);
     }
@@ -128,7 +128,7 @@ public static class Cronus {
         return DeserializeDict(content, path);
     }
 
-    private static async ValueTask<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync(string path, CancellationToken token = default) {
+    private static async Task<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync(string path, CancellationToken token = default) {
         var content = await File.ReadAllTextAsync(path, token);
         return DeserializeDict(content, path);
     }
