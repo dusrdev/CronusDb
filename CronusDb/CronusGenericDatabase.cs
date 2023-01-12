@@ -87,6 +87,7 @@ public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
                 continue;
             }
             count++;
+            // Triggering the base version skip the serialization to improve performance for bulk removals.
             base.OnDataChanged(new DataChangedEventArgs() {
                 Key = k,
                 Value = v,
