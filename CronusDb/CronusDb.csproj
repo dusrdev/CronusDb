@@ -16,9 +16,6 @@
 	 <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 		 <_Parameter1>CronusDb.ManualTests</_Parameter1>
 	 </AssemblyAttribute>
-	 <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-		 <_Parameter1>CronusDb.Benchmarks</_Parameter1>
-	 </AssemblyAttribute>
   </ItemGroup>
 	
  <ItemGroup>
