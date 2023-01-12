@@ -3,7 +3,7 @@
 /// <summary>
 /// Configuration for the polymorphic database
 /// </summary>
-public record PolymorphicConfiguration {
+public record DatabaseConfiguration {
     /// <summary>
     /// The path to which the database file will be saved.
     /// </summary>
