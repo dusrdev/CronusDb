@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CronusDb;
 
@@ -6,14 +7,21 @@ namespace CronusDb;
 /// Fast Crud performance at the cost of slower serialization to disk.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public sealed class SerializableInMemoryDatabase<T> : CronusBase<T> {
+public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
     private readonly ConcurrentDictionary<string, T> _data;
-    private readonly SerializableDatabaseConfiguration<T>? _config;
+    private readonly GenericDatabaseConfiguration<T> _config;
 
     // This constructor is used for a serializable instance
-    internal SerializableInMemoryDatabase(ConcurrentDictionary<string, T> data, SerializableDatabaseConfiguration<T> config) {
+    internal CronusGenericDatabase(ConcurrentDictionary<string, T> data, GenericDatabaseConfiguration<T> config) {
         _data = data;
         _config = config;
+    }
+
+    internal override void OnDataChanged(DataChangedEventArgs e) {
+        base.OnDataChanged(e);
+        if (_config.SerializeOnUpdate) {
+            Serialize();
+        }
     }
 
     /// <summary>
@@ -27,9 +35,16 @@ public sealed class SerializableInMemoryDatabase<T> : CronusBase<T> {
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
-    public override void Upsert(string key, T value) {
+    /// <exception cref="ArgumentNullException"/>
+    public override void Upsert(string key, [DisallowNull] T value) {
+        ArgumentNullException.ThrowIfNull(value);
+        var isUpdate = _data.ContainsKey(key);
         _data[key] = value;
-        OnItemUpserted(EventArgs.Empty);
+        OnDataChanged(new DataChangedEventArgs {
+            Key = key,
+            Value = value,
+            ChangeType = isUpdate ? DataChangeType.Update : DataChangeType.Insert
+        });
     }
 
     /// <summary>
@@ -44,11 +59,15 @@ public sealed class SerializableInMemoryDatabase<T> : CronusBase<T> {
     /// <param name="key"></param>
     /// <returns>True if successful, false if database did not contain <paramref name="key"/>.</returns>
     public override bool Remove(string key) {
-        var output = _data.Remove(key, out _);
-        if (output) {
-            OnItemRemoved(EventArgs.Empty);
+        if (!_data.TryRemove(key, out var val)) {
+            return false;
         }
-        return output;
+        OnDataChanged(new DataChangedEventArgs {
+            Key = key,
+            Value = val,
+            ChangeType = DataChangeType.Remove
+        });
+        return true;
     }
 
     /// <summary>
@@ -59,15 +78,29 @@ public sealed class SerializableInMemoryDatabase<T> : CronusBase<T> {
     /// This is the main way to perform cache invalidation.
     /// </remarks>
     public override void RemoveAny(Func<T, bool> selector) {
+        int count = 0;
         foreach (var (k, v) in _data) {
-            if (selector.Invoke(v)) {
-                Remove(k);
+            if (!selector.Invoke(v)) {
+                continue;
             }
+            if (!_data.TryRemove(k, out _)) {
+                continue;
+            }
+            count++;
+            base.OnDataChanged(new DataChangedEventArgs() {
+                Key = k,
+                Value = v,
+                ChangeType = DataChangeType.Remove
+            });
         }
+        if (count is 0 || !_config.SerializeOnUpdate) {
+            return;
+        }
+        Serialize();
     }
 
     /// <summary>
-    /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
+    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{T}"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override async Task SerializeAsync() {
@@ -91,7 +124,7 @@ public sealed class SerializableInMemoryDatabase<T> : CronusBase<T> {
     }
 
     /// <summary>
-    /// Serializes the database to the path in <see cref="SerializableDatabaseConfiguration{T}"/>.
+    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{T}"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override void Serialize() {
