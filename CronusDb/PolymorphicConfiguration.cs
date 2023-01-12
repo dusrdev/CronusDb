@@ -10,6 +10,11 @@ public record PolymorphicConfiguration {
     public required string Path { get; init; }
 
     /// <summary>
+    /// Automatically trigger serialization on Insert, Update and Delete.
+    /// </summary>
+    public required bool SerializeOnUpdate { get; init; }
+
+    /// <summary>
     /// General encryption key, the entire file will be encrypted with this.
     /// </summary>
     public string? EncryptionKey { get; init; }
