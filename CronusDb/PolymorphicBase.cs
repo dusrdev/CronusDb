@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace CronusDb;
@@ -9,21 +8,12 @@ namespace CronusDb;
 /// </summary>
 public abstract class PolymorphicBase {
     /// <summary>
-    /// Triggered when an item is upserted.
+    /// Triggered when there is a change in the database.
     /// </summary>
-    public event EventHandler? ItemUpserted;
+    public event EventHandler<DataChangedEventArgs>? DataChanged;
 
-    internal virtual void OnItemUpserted(EventArgs e) {
-        ItemUpserted?.Invoke(this, e);
-    }
-
-    /// <summary>
-    /// Triggered when an item is removed.
-    /// </summary>
-    public event EventHandler? ItemRemoved;
-
-    internal virtual void OnItemRemoved(EventArgs e) {
-        ItemRemoved?.Invoke(this, e);
+    internal virtual void OnDataChanged(DataChangedEventArgs e) {
+        DataChanged?.Invoke(this, e);
     }
 
     /// <summary>
