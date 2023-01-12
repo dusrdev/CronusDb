@@ -6,7 +6,7 @@ namespace CronusDb;
 /// <summary>
 /// Base type for the polymorphic database
 /// </summary>
-public abstract class PolymorphicBase {
+public abstract class Database {
     /// <summary>
     /// Triggered when there is a change in the database.
     /// </summary>
@@ -53,24 +53,24 @@ public abstract class PolymorphicBase {
     /// </summary>
     public abstract void Serialize();
 
-    internal virtual void SerializeWithEncryption(IDictionary<string, string> data, PolymorphicConfiguration config) {
+    internal virtual void SerializeWithEncryption(IDictionary<string, string> data, DatabaseConfiguration config) {
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
         var encrypted = json.Encrypt(config.EncryptionKey!);
         File.WriteAllText(config.Path, encrypted);
     }
 
-    internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, PolymorphicConfiguration config) {
+    internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, DatabaseConfiguration config) {
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
         var encrypted = json.Encrypt(config.EncryptionKey!);
         await File.WriteAllTextAsync(config.Path, encrypted);
     }
 
-    internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, PolymorphicConfiguration config) {
+    internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, DatabaseConfiguration config) {
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
         File.WriteAllText(config.Path, json);
     }
 
-    internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, PolymorphicConfiguration config) {
+    internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, DatabaseConfiguration config) {
         var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
         await File.WriteAllTextAsync(config.Path, json);
     }
