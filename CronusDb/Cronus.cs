@@ -8,22 +8,6 @@ namespace CronusDb;
 /// </summary>
 public static class Cronus {
     /// <summary>
-    /// Creates and returns a new instance of an In-Memory only database
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public static InMemoryDatabase<T> CreateInMemoryDatabase<T>() {
-        return new InMemoryDatabase<T>(new());
-    }
-
-    /// <summary>
-    /// Creates and returns a new instance of an In-Memory only database
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public static Task<InMemoryDatabase<T>> CreateInMemoryDatabaseAsync<T>() {
-        return Task.FromResult(new InMemoryDatabase<T>(new()));
-    }
-
-    /// <summary>
     /// Creates and returns a new instance of an Serializable in-Memory database
     /// </summary>
     /// <typeparam name="T"></typeparam>
