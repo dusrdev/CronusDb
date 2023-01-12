@@ -6,7 +6,7 @@ namespace CronusDb;
 /// <summary>
 /// Main entry point for database creation
 /// </summary>
-public static class CronusDatabase {
+public static class Cronus {
     /// <summary>
     /// Creates and returns a new instance of an In-Memory only database
     /// </summary>

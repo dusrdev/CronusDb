@@ -10,7 +10,7 @@ public class RegularBenchmarks {
 
     [GlobalSetup]
     public async Task Setup() {
-        UserDb = await CronusDatabase.CreateSerializableDatabaseAsync(new SerializableDatabaseConfiguration<User>() {
+        UserDb = await Cronus.CreateSerializableDatabaseAsync(new SerializableDatabaseConfiguration<User>() {
             Path = @".\User.db",
             ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
             FromStringConverter = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)

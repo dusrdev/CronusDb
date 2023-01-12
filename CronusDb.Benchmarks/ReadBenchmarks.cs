@@ -8,7 +8,7 @@ public class ReadBenchmarks {
 
     [GlobalSetup]
     public void Setup() {
-        UserDb = CronusDatabase.CreateInMemoryDatabase<User>();
+        UserDb = Cronus.CreateInMemoryDatabase<User>();
 
         var user = new User {
             Age = 500,

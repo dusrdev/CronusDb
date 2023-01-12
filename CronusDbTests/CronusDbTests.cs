@@ -12,7 +12,7 @@ public class CronusDbTests {
             FromStringConverter = static x => int.Parse(x)
         };
 
-        var db = await CronusDatabase.CreateSerializableDatabaseAsync(config);
+        var db = await Cronus.CreateSerializableDatabaseAsync(config);
 
         db.Upsert("David", 25);
         db.Upsert("Ben", 28);
@@ -21,7 +21,7 @@ public class CronusDbTests {
 
         await db.SerializeAsync();
 
-        var rdb = await CronusDatabase.CreateSerializableDatabaseAsync(config);
+        var rdb = await Cronus.CreateSerializableDatabaseAsync(config);
 
         Assert.AreEqual(25, rdb.Get("David"));
         Assert.AreEqual(28, rdb.Get("Ben"));
@@ -38,7 +38,7 @@ public class CronusDbTests {
             FromStringConverter = static x => int.Parse(x)
         };
 
-        var db = CronusDatabase.CreateSerializableDatabase(config);
+        var db = Cronus.CreateSerializableDatabase(config);
 
         db.Upsert("David", 25);
         db.Upsert("Ben", 28);
@@ -47,7 +47,7 @@ public class CronusDbTests {
 
         db.Serialize();
 
-        var rdb = CronusDatabase.CreateSerializableDatabase(config);
+        var rdb = Cronus.CreateSerializableDatabase(config);
 
         Assert.AreEqual(25, rdb.Get("David"));
         Assert.AreEqual(28, rdb.Get("Ben"));
@@ -57,7 +57,7 @@ public class CronusDbTests {
 
     [TestMethod]
     public void UpsertTest() {
-        var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateInMemoryDatabase<int>();
 
         db.Upsert("David", 25);
 
@@ -66,7 +66,7 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveTest() {
-        var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateInMemoryDatabase<int>();
 
         db.Upsert("David", 25);
 
@@ -77,7 +77,7 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveAnyTest() {
-        var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateInMemoryDatabase<int>();
 
         db.Upsert("David", 25);
         db.Upsert("Ben", 28);
@@ -94,7 +94,7 @@ public class CronusDbTests {
 
     [TestMethod]
     public void UpsertEventTest() {
-        var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateInMemoryDatabase<int>();
 
         bool triggered = false;
 
@@ -107,7 +107,7 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveEventTest() {
-        var db = CronusDatabase.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateInMemoryDatabase<int>();
 
         bool triggered = false;
 

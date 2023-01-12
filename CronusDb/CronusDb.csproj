@@ -20,5 +20,9 @@
 		 <_Parameter1>CronusDb.Benchmarks</_Parameter1>
 	 </AssemblyAttribute>
   </ItemGroup>
+	
+ <ItemGroup>
+   <None Include="..\.editorconfig" Link=".editorconfig" />
+ </ItemGroup>
 
 </Project>

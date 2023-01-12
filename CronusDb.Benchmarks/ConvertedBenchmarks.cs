@@ -12,8 +12,8 @@ public class ConvertedBenchmarks {
 
     [GlobalSetup]
     public async Task Setup() {
-        _regularDb = CronusDatabase.CreateInMemoryDatabase<User>();
-        _convertedDb = await CronusDatabase.CreateSerializableDatabaseAsync(new SerializableDatabaseConfiguration<User> {
+        _regularDb = Cronus.CreateInMemoryDatabase<User>();
+        _convertedDb = await Cronus.CreateSerializableDatabaseAsync(new SerializableDatabaseConfiguration<User> {
             Path = "",
             ToStringConverter = static x => JsonSerializer.Serialize(x, JsonContext.Default.User),
             FromStringConverter = static x => JsonSerializer.Deserialize(x, JsonContext.Default.User)

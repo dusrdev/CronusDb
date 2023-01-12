@@ -21,21 +21,23 @@ for (int i = 0; i < originals.Length; i++) {
     Debug.Assert(originals[i] == decrypted[i]);
 }
 
-//var config = new CronusDbConfiguration<int>() {
-//    Path = @".\encrypted.db",
-//    EncryptionKey = "1q2w3e4r5t",
-//    ToStringConverter = static x => x.ToString(),
-//    FromStringConverter = static x => int.Parse(x)
-//};
+/*
+var config = new CronusDbConfiguration<int>() {
+Path = @".\encrypted.db",
+EncryptionKey = "1q2w3e4r5t",
+ToStringConverter = static x => x.ToString(),
+FromStringConverter = static x => int.Parse(x)
+};
 
-//var db = await CronusDatabase<int>.Create(config);
+var db = await Cronus<int>.Create(config);
 
-//db.Upsert("David", 25);
+db.Upsert("David", 25);
 
-//await db.SerializeAsync();
+await db.SerializeAsync();
 
-//var rdb = await CronusDatabase<int>.Create(config);
+var rdb = await Cronus<int>.Create(config);
 
-//Console.WriteLine($"David => {rdb.Get("David")}");
+Console.WriteLine($"David => {rdb.Get("David")}");
+*/
 
 Console.ReadKey();
