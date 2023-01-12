@@ -6,13 +6,14 @@ namespace CronusDb.Tests;
 public class CronusDbTests {
     [TestMethod]
     public async Task GeneralTest_CreateAddSerializeDeserialize() {
-        var config = new SerializableDatabaseConfiguration<int>() {
+        var config = new GenericDatabaseConfiguration<int>() {
             Path = @".\temp.db",
+            SerializeOnUpdate = false,
             ToStringConverter = static x => x.ToString(),
             FromStringConverter = static x => int.Parse(x)
         };
 
-        var db = await Cronus.CreateSerializableDatabaseAsync(config);
+        var db = await Cronus.CreateGenericDatabaseAsync(config);
 
         db.Upsert("David", 25);
         db.Upsert("Ben", 28);
@@ -21,7 +22,7 @@ public class CronusDbTests {
 
         await db.SerializeAsync();
 
-        var rdb = await Cronus.CreateSerializableDatabaseAsync(config);
+        var rdb = await Cronus.CreateGenericDatabaseAsync(config);
 
         Assert.AreEqual(25, rdb.Get("David"));
         Assert.AreEqual(28, rdb.Get("Ben"));
@@ -31,14 +32,15 @@ public class CronusDbTests {
 
     [TestMethod]
     public void GeneralTestEncrypted_CreateAddSerializeDeserialize() {
-        var config = new SerializableDatabaseConfiguration<int>() {
+        var config = new GenericDatabaseConfiguration<int>() {
             Path = @".\encrypted.db",
+            SerializeOnUpdate = false,
             EncryptionKey = "1q2w3e4r5t",
             ToStringConverter = static x => x.ToString(),
             FromStringConverter = static x => int.Parse(x)
         };
 
-        var db = Cronus.CreateSerializableDatabase(config);
+        var db = Cronus.CreateGenericDatabase(config);
 
         db.Upsert("David", 25);
         db.Upsert("Ben", 28);
@@ -47,7 +49,7 @@ public class CronusDbTests {
 
         db.Serialize();
 
-        var rdb = Cronus.CreateSerializableDatabase(config);
+        var rdb = Cronus.CreateGenericDatabase(config);
 
         Assert.AreEqual(25, rdb.Get("David"));
         Assert.AreEqual(28, rdb.Get("Ben"));
@@ -56,28 +58,13 @@ public class CronusDbTests {
     }
 
     [TestMethod]
-    public void UpsertTest() {
-        var db = Cronus.CreateInMemoryDatabase<int>();
-
-        db.Upsert("David", 25);
-
-        Assert.IsTrue(db.ContainsKey("David"));
-    }
-
-    [TestMethod]
-    public void RemoveTest() {
-        var db = Cronus.CreateInMemoryDatabase<int>();
-
-        db.Upsert("David", 25);
-
-        db.Remove("David");
-
-        Assert.IsFalse(db.ContainsKey("David"));
-    }
-
-    [TestMethod]
     public void RemoveAnyTest() {
-        var db = Cronus.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int>() {
+            Path = @".\temp.db",
+            SerializeOnUpdate = false,
+            ToStringConverter = static x => x.ToString(),
+            FromStringConverter = static x => int.Parse(x)
+        });
 
         db.Upsert("David", 25);
         db.Upsert("Ben", 28);
@@ -94,11 +81,16 @@ public class CronusDbTests {
 
     [TestMethod]
     public void UpsertEventTest() {
-        var db = Cronus.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int>() {
+            Path = @".\temp.db",
+            SerializeOnUpdate = false,
+            ToStringConverter = static x => x.ToString(),
+            FromStringConverter = static x => int.Parse(x)
+        });
 
         bool triggered = false;
 
-        db.ItemUpserted += (_, _) => triggered = true;
+        db.DataChanged += (_, _) => triggered = true;
 
         db.Upsert("David", 25);
 
@@ -107,13 +99,22 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveEventTest() {
-        var db = Cronus.CreateInMemoryDatabase<int>();
+        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int>() {
+            Path = @".\temp.db",
+            SerializeOnUpdate = false,
+            ToStringConverter = static x => x.ToString(),
+            FromStringConverter = static x => int.Parse(x)
+        });
 
         bool triggered = false;
 
         db.Upsert("David", 25);
 
-        db.ItemRemoved += (_, _) => triggered = true;
+        db.DataChanged += (_, e) => {
+            if (e.ChangeType is DataChangeType.Remove) {
+                triggered = true;
+            }
+        };
 
         db.Remove("David");
 
