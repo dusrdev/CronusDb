@@ -5,15 +5,11 @@
 /// </summary>
 public enum DataChangeType {
     /// <summary>
-    /// A new key was inserted
+    /// A key was inserted or updated
     /// </summary>
-    Insert = 0,
-    /// <summary>
-    /// An existing key was updated
-    /// </summary>
-    Update = 1,
+    Upsert = 0,
     /// <summary>
     /// A key was removed
     /// </summary>
-    Remove = 2
+    Remove = 1
 }
