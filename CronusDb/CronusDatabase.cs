@@ -9,8 +9,8 @@ public sealed class CronusDatabase : Database {
     private readonly ConcurrentDictionary<string, string> _data;
     private readonly DatabaseConfiguration _config;
 
-    internal CronusDatabase(ConcurrentDictionary<string, string> data, DatabaseConfiguration config) {
-        _data = data;
+    internal CronusDatabase(ConcurrentDictionary<string, string>? data, DatabaseConfiguration config) {
+        _data = data ?? new();
         _config = config;
     }
 
@@ -61,24 +61,12 @@ public sealed class CronusDatabase : Database {
     /// <summary>
     /// Saves the database to the hard disk.
     /// </summary>
-    public override void Serialize() {
-        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            SerializeWithoutEncryption(_data, _config);
-            return;
-        }
-        SerializeWithEncryption(_data, _config);
-    }
+    public override void Serialize() => Serializer.Serialize(_data, _config!.Path, _config!.EncryptionKey);
 
     /// <summary>
     /// Saves the database to the hard disk.
     /// </summary>
-    public override async Task SerializeAsync() {
-        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            await SerializeWithoutEncryptionAsync(_data, _config);
-            return;
-        }
-        await SerializeWithEncryptionAsync(_data, _config);
-    }
+    public override Task SerializeAsync() => Serializer.SerializeAsync(_data, _config!.Path, _config!.EncryptionKey);
 
     /// <summary>
     /// Updates or inserts a new <paramref name="value" /> with the <paramref name="key" />.
@@ -89,12 +77,11 @@ public sealed class CronusDatabase : Database {
     /// <exception cref="ArgumentException"/>
     public override void Upsert(string key, [DisallowNull] string value, string? encryptionKey = null) {
         ArgumentException.ThrowIfNullOrEmpty(value);
-        var isUpdate = _data.ContainsKey(key);
         _data[key] = encryptionKey is null ? value : value.Encrypt(encryptionKey);
         OnDataChanged(new DataChangedEventArgs {
             Key = key,
             Value = value,
-            ChangeType = isUpdate ? DataChangeType.Update : DataChangeType.Insert
+            ChangeType = DataChangeType.Upsert
         });
     }
 }

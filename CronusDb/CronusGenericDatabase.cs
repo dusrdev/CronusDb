@@ -6,14 +6,14 @@ namespace CronusDb;
 /// <summary>
 /// Fast Crud performance at the cost of slower serialization to disk.
 /// </summary>
-/// <typeparam name="T"></typeparam>
-public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
-    private readonly ConcurrentDictionary<string, T> _data;
-    private readonly GenericDatabaseConfiguration<T> _config;
+/// <typeparam name="TValue"></typeparam>
+public sealed class CronusGenericDatabase<TValue> : GenericDatabase<TValue> {
+    private readonly ConcurrentDictionary<string, TValue> _data;
+    private readonly GenericDatabaseConfiguration<TValue, string> _config;
 
     // This constructor is used for a serializable instance
-    internal CronusGenericDatabase(ConcurrentDictionary<string, T> data, GenericDatabaseConfiguration<T> config) {
-        _data = data;
+    internal CronusGenericDatabase(ConcurrentDictionary<string, TValue>? data, GenericDatabaseConfiguration<TValue, string> config) {
+        _data = data ?? new();
         _config = config;
     }
 
@@ -25,10 +25,10 @@ public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
     }
 
     /// <summary>
-    /// Returns the value if it exists, otherwise the default for <typeparamref name="T"/>.
+    /// Returns the value if it exists, otherwise the default for <typeparamref name="TValue"/>.
     /// </summary>
     /// <param name="key"></param>
-    public override T? Get(string key) => _data.TryGetValue(key, out var value) ? value : default;
+    public override TValue? Get(string key) => _data.GetValueOrDefault(key);
 
     /// <summary>
     /// Inserts or updates
@@ -36,14 +36,13 @@ public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
     /// <param name="key"></param>
     /// <param name="value"></param>
     /// <exception cref="ArgumentNullException"/>
-    public override void Upsert(string key, [DisallowNull] T value) {
+    public override void Upsert(string key, [DisallowNull] TValue value) {
         ArgumentNullException.ThrowIfNull(value);
-        var isUpdate = _data.ContainsKey(key);
         _data[key] = value;
         OnDataChanged(new DataChangedEventArgs {
             Key = key,
             Value = value,
-            ChangeType = isUpdate ? DataChangeType.Update : DataChangeType.Insert
+            ChangeType = DataChangeType.Upsert
         });
     }
 
@@ -77,7 +76,7 @@ public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
     /// <remarks>
     /// This is the main way to perform cache invalidation.
     /// </remarks>
-    public override void RemoveAny(Func<T, bool> selector) {
+    public override void RemoveAny(Func<TValue, bool> selector) {
         int count = 0;
         foreach (var (k, v) in _data) {
             if (!selector.Invoke(v)) {
@@ -101,50 +100,22 @@ public sealed class CronusGenericDatabase<T> : GenericDatabase<T> {
     }
 
     /// <summary>
-    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{T}"/>.
+    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{TValue, TSerialized}"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override async Task SerializeAsync() {
-        var output = new Dictionary<string, string>();
+        var output = _data.Convert(_config!.ToTSerialized);
 
-        foreach (var (k, v) in _data) {
-            var str = string.Empty;
-            try {
-                str = _config!.ToStringConverter(v);
-            } catch {
-                throw new InvalidOperationException($"Converting the value of key <{k}> failed.");
-            }
-            output.Add(k, str);
-        }
-
-        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            await SerializeWithoutEncryptionAsync(output, _config!);
-            return;
-        }
-        await SerializeWithEncryptionAsync(output, _config);
+        await Serializer.SerializeAsync(output, _config!.Path, _config!.EncryptionKey);
     }
 
     /// <summary>
-    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{T}"/>.
+    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{TValue, TSerialized}"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override void Serialize() {
-        var output = new Dictionary<string, string>();
+        var output = _data.Convert(_config!.ToTSerialized);
 
-        foreach (var (k, v) in _data) {
-            var str = string.Empty;
-            try {
-                str = _config!.ToStringConverter(v);
-            } catch {
-                throw new InvalidOperationException($"Converting the value of key <{k}> failed.");
-            }
-            output.Add(k, str);
-        }
-
-        if (string.IsNullOrWhiteSpace(_config!.EncryptionKey)) {
-            SerializeWithoutEncryption(output, _config!);
-            return;
-        }
-        SerializeWithEncryption(output, _config);
+        Serializer.Serialize(output, _config!.Path, _config!.EncryptionKey);
     }
 }
