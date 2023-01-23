@@ -1,5 +1,6 @@
-﻿using System.Collections.Concurrent;
-using System.Text.Json;
+﻿using MemoryPack;
+
+using System.Collections.Concurrent;
 
 namespace CronusDb;
 
@@ -8,63 +9,99 @@ namespace CronusDb;
 /// </summary>
 public static class Cronus {
     /// <summary>
-    /// Creates and returns a new instance of a serializable generic database
+    /// Creates and returns a new instance of a serializable binary database
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
     /// <param name="configuration"></param>
     /// <remarks>
-    /// This is a serializable database with fast crud operations and better invalidation using <see cref="GenericDatabase{T}.RemoveAny(Func{T, bool})"/>
+    /// This is a serializable database with fast crud operations and better invalidation using <see cref="CronusBinaryDatabase{TValue}.RemoveAny(Func{TValue, bool})"/>
     /// </remarks>
-    public static CronusGenericDatabase<T> CreateGenericDatabase<T>(GenericDatabaseConfiguration<T> configuration) {
+    public static CronusBinaryDatabase<TValue> CreateBinaryDatabase<TValue>(GenericDatabaseConfiguration<TValue, byte[]> configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new CronusGenericDatabase<T>(new(), configuration);
+            return new CronusBinaryDatabase<TValue>(new(), configuration);
         }
 
-        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            DeserializeWithoutEncyption(configuration.Path)
-            : DeserializeWithEncyption(configuration.Path, configuration.EncryptionKey);
+        var dict = Deserialize<byte[]>(configuration.Path, configuration.EncryptionKey);
 
         if (dict is null) {
-            return new CronusGenericDatabase<T>(new(), configuration);
+            return new CronusBinaryDatabase<TValue>(new(), configuration);
         }
 
-        var output = new ConcurrentDictionary<string, T>();
+        var output = dict.Convert(configuration.ToTValue);
 
-        foreach (var (k, v) in dict) {
-            _ = output.TryAdd(k, configuration.FromStringConverter(v));
+        return new CronusBinaryDatabase<TValue>(output, configuration);
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of a serializable binary database
+    /// </summary>
+    /// <typeparam name="TValue"></typeparam>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// This is a serializable database with fast crud operations and better invalidation using <see cref="CronusBinaryDatabase{TValue}.RemoveAny(Func{TValue, bool})"/>
+    /// </remarks>
+    public static async ValueTask<CronusBinaryDatabase<TValue>> CreateBinaryDatabaseAsync<TValue>(GenericDatabaseConfiguration<TValue, byte[]> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new CronusBinaryDatabase<TValue>(new(), configuration);
         }
 
-        return new CronusGenericDatabase<T>(output, configuration);
+        var dict = await DeserializeAsync<byte[]>(configuration.Path, configuration.EncryptionKey);
+
+        if (dict is null) {
+            return new CronusBinaryDatabase<TValue>(new(), configuration);
+        }
+
+        var output = dict.Convert(configuration.ToTValue);
+
+        return new CronusBinaryDatabase<TValue>(output, configuration);
     }
 
     /// <summary>
     /// Creates and returns a new instance of a serializable generic database
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
     /// <param name="configuration"></param>
     /// <remarks>
-    /// This is a serializable database with fast crud operations and better invalidation using <see cref="GenericDatabase{T}.RemoveAny(Func{T, bool})"/>
+    /// This is a serializable database with fast crud operations and better invalidation using <see cref="CronusGenericDatabase{TValue}.RemoveAny(Func{TValue, bool})"/>
     /// </remarks>
-    public static async ValueTask<CronusGenericDatabase<T>> CreateGenericDatabaseAsync<T>(GenericDatabaseConfiguration<T> configuration) {
+    public static CronusGenericDatabase<TValue> CreateGenericDatabase<TValue>(GenericDatabaseConfiguration<TValue, string> configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new CronusGenericDatabase<T>(new(), configuration);
+            return new CronusGenericDatabase<TValue>(new(), configuration);
         }
 
-        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            await DeserializeWithoutEncyptionAsync(configuration.Path)
-            : await DeserializeWithEncyptionAsync(configuration.Path, configuration.EncryptionKey);
+        var dict = Deserialize<string>(configuration.Path, configuration.EncryptionKey);
 
         if (dict is null) {
-            return new CronusGenericDatabase<T>(new(), configuration);
+            return new CronusGenericDatabase<TValue>(new(), configuration);
         }
 
-        var output = new ConcurrentDictionary<string, T>();
+        var output = dict.Convert(configuration.ToTValue);
 
-        foreach (var (k, v) in dict) {
-            _ = output.TryAdd(k, configuration.FromStringConverter(v));
+        return new CronusGenericDatabase<TValue>(output, configuration);
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of a serializable generic database
+    /// </summary>
+    /// <typeparam name="TValue"></typeparam>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// This is a serializable database with fast crud operations and better invalidation using <see cref="CronusGenericDatabase{TValue}.RemoveAny(Func{TValue, bool})"/>
+    /// </remarks>
+    public static async ValueTask<CronusGenericDatabase<TValue>> CreateGenericDatabaseAsync<TValue>(GenericDatabaseConfiguration<TValue, string> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new CronusGenericDatabase<TValue>(new(), configuration);
         }
 
-        return new CronusGenericDatabase<T>(output, configuration);
+        var dict = await DeserializeAsync<string>(configuration.Path, configuration.EncryptionKey);
+
+        if (dict is null) {
+            return new CronusGenericDatabase<TValue>(new(), configuration);
+        }
+
+        var output = dict.Convert(configuration.ToTValue);
+
+        return new CronusGenericDatabase<TValue>(output, configuration);
     }
 
     /// <summary>
@@ -79,15 +116,9 @@ public static class Cronus {
             return new CronusDatabase(new(), configuration);
         }
 
-        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            DeserializeWithoutEncyption(configuration.Path)
-            : DeserializeWithEncyption(configuration.Path, configuration.EncryptionKey);
+        var dict = Deserialize<string>(configuration.Path, configuration.EncryptionKey);
 
-        if (dict is null) {
-            return new CronusDatabase(new(), configuration);
-        }
-
-        return new CronusDatabase(new(dict), configuration);
+        return new CronusDatabase(dict, configuration);
     }
 
     /// <summary>
@@ -102,46 +133,30 @@ public static class Cronus {
             return new CronusDatabase(new(), configuration);
         }
 
-        var dict = string.IsNullOrWhiteSpace(configuration.EncryptionKey) ?
-            await DeserializeWithoutEncyptionAsync(configuration.Path)
-            : await DeserializeWithEncyptionAsync(configuration.Path, configuration.EncryptionKey);
+        var dict = await DeserializeAsync<string>(configuration.Path, configuration.EncryptionKey);
 
-        if (dict is null) {
-            return new CronusDatabase(new(), configuration);
-        }
-
-        return new CronusDatabase(new(dict), configuration);
+        return new CronusDatabase(dict, configuration);
     }
 
-    private static IDictionary<string, string>? DeserializeWithEncyption(string path, string encryptionKey) {
-        var content = File.ReadAllText(path);
-        return DeserializeDict(content, path, encryptionKey);
+    private static ConcurrentDictionary<string, TSerialized>? Deserialize<TSerialized>(string path, string? encryptionKey) {
+        var bin = File.ReadAllBytes(path);
+        return DeserializeDict<TSerialized>(bin, path, encryptionKey);
     }
 
-    private static async Task<IDictionary<string, string>?> DeserializeWithEncyptionAsync(string path, string encryptionKey, CancellationToken token = default) {
-        var content = await File.ReadAllTextAsync(path, token);
-        return DeserializeDict(content, path, encryptionKey);
+    private static async Task<ConcurrentDictionary<string, TSerialized>?> DeserializeAsync<TSerialized>(string path, string? encryptionKey, CancellationToken token = default) {
+        var bin = await File.ReadAllBytesAsync(path, token);
+        return DeserializeDict<TSerialized>(bin, path, encryptionKey);
     }
 
-    private static IDictionary<string, string>? DeserializeWithoutEncyption(string path) {
-        var content = File.ReadAllText(path);
-        return DeserializeDict(content, path);
-    }
-
-    private static async Task<IDictionary<string, string>?> DeserializeWithoutEncyptionAsync(string path, CancellationToken token = default) {
-        var content = await File.ReadAllTextAsync(path, token);
-        return DeserializeDict(content, path);
-    }
-
-    private static IDictionary<string, string>? DeserializeDict(string content, string path, string? encryptionKey = null) {
+    private static ConcurrentDictionary<string, TSerialized>? DeserializeDict<TSerialized>(ReadOnlySpan<byte> bin, string path, string? encryptionKey = null) {
         try {
-            if (string.IsNullOrWhiteSpace(content)) {
+            if (bin.Length is 0) {
                 return default;
             }
-            if (!string.IsNullOrWhiteSpace(encryptionKey)) {
-                content = content.Decrypt(encryptionKey);
-            }
-            return JsonSerializer.Deserialize(content, JsonContexts.Default.IDictionaryStringString);
+            var buffer = string.IsNullOrWhiteSpace(encryptionKey)
+                ? bin
+                : bin.Decrypt(encryptionKey!);
+            return MemoryPackSerializer.Deserialize<ConcurrentDictionary<string, TSerialized>>(buffer);
         } catch {
             throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
