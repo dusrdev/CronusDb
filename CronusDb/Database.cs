@@ -1,10 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 
 namespace CronusDb;
 
 /// <summary>
-/// Base type for the polymorphic database
+/// Base type for the string value database
 /// </summary>
 public abstract class Database {
     /// <summary>
@@ -52,26 +51,4 @@ public abstract class Database {
     /// Saves the database to the hard disk.
     /// </summary>
     public abstract void Serialize();
-
-    internal virtual void SerializeWithEncryption(IDictionary<string, string> data, DatabaseConfiguration config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        var encrypted = json.Encrypt(config.EncryptionKey!);
-        File.WriteAllText(config.Path, encrypted);
-    }
-
-    internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, DatabaseConfiguration config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        var encrypted = json.Encrypt(config.EncryptionKey!);
-        await File.WriteAllTextAsync(config.Path, encrypted);
-    }
-
-    internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, DatabaseConfiguration config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        File.WriteAllText(config.Path, json);
-    }
-
-    internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, DatabaseConfiguration config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        await File.WriteAllTextAsync(config.Path, json);
-    }
 }

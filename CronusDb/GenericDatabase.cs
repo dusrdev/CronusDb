@@ -1,7 +1,4 @@
-﻿using MemoryPack;
-
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace CronusDb;
 
@@ -9,8 +6,7 @@ namespace CronusDb;
 /// Base type for the generic value database
 /// </summary>
 /// <typeparam name="TValue"></typeparam>
-/// <typeparam name="TSerialized"></typeparam>
-public abstract class GenericDatabase<TValue, TSerialized> {
+public abstract class GenericDatabase<TValue> {
     /// <summary>
     /// Triggered when there is a change in the database.
     /// </summary>
@@ -69,26 +65,4 @@ public abstract class GenericDatabase<TValue, TSerialized> {
     /// Saves the database to the hard disk.
     /// </summary>
     public abstract void Serialize();
-
-    internal virtual void SerializeWithEncryption(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
-        var bin = MemoryPackSerializer.Serialize(data);
-        var encrypted = bin.Encrypt(config.EncryptionKey!);
-        File.WriteAllBytes(config.Path, encrypted);
-    }
-
-    internal virtual async Task SerializeWithEncryptionAsync(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
-        var bin = MemoryPackSerializer.Serialize(data);
-        var encrypted = bin.Encrypt(config.EncryptionKey!);
-        await File.WriteAllBytesAsync(config.Path, encrypted);
-    }
-
-    internal virtual void SerializeWithoutEncryption(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
-        var bin = MemoryPackSerializer.Serialize(data);
-        File.WriteAllBytes(config.Path, bin);
-    }
-
-    internal virtual async Task SerializeWithoutEncryptionAsync(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
-        using var stream = File.OpenWrite(config.Path);
-        await MemoryPackSerializer.SerializeAsync(stream, data);
-    }
 }
