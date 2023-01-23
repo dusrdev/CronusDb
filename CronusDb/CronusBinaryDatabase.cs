@@ -10,7 +10,7 @@ namespace CronusDb;
 /// <remarks>
 /// Requires a way to deserialize and serialize the generic value to byte[]
 /// </remarks>
-public sealed class CronusBinaryDatabase<TValue> : GenericDatabase<TValue> {
+public sealed class CronusBinaryDatabase<TValue> : Database<TValue> {
     private readonly ConcurrentDictionary<string, TValue> _data;
     private readonly GenericDatabaseConfiguration<TValue, byte[]> _config;
 

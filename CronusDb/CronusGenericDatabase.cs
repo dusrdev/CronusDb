@@ -7,7 +7,7 @@ namespace CronusDb;
 /// Fast Crud performance at the cost of slower serialization to disk.
 /// </summary>
 /// <typeparam name="TValue"></typeparam>
-public sealed class CronusGenericDatabase<TValue> : GenericDatabase<TValue> {
+public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
     private readonly ConcurrentDictionary<string, TValue> _data;
     private readonly GenericDatabaseConfiguration<TValue, string> _config;
 
