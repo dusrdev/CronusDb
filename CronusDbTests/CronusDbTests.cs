@@ -6,11 +6,11 @@ namespace CronusDb.Tests;
 public class CronusDbTests {
     [TestMethod]
     public async Task GeneralTest_CreateAddSerializeDeserialize() {
-        var config = new GenericDatabaseConfiguration<int>() {
+        var config = new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
             SerializeOnUpdate = false,
-            ToStringConverter = static x => x.ToString(),
-            FromStringConverter = static x => int.Parse(x)
+            ToTSerialized = static x => x.ToString(),
+            ToTValue = static x => int.Parse(x)
         };
 
         var db = await Cronus.CreateGenericDatabaseAsync(config);
@@ -32,12 +32,12 @@ public class CronusDbTests {
 
     [TestMethod]
     public void GeneralTestEncrypted_CreateAddSerializeDeserialize() {
-        var config = new GenericDatabaseConfiguration<int>() {
+        var config = new GenericDatabaseConfiguration<int, string>() {
             Path = @".\encrypted.db",
             SerializeOnUpdate = false,
             EncryptionKey = "1q2w3e4r5t",
-            ToStringConverter = static x => x.ToString(),
-            FromStringConverter = static x => int.Parse(x)
+            ToTSerialized = static x => x.ToString(),
+            ToTValue = static x => int.Parse(x)
         };
 
         var db = Cronus.CreateGenericDatabase(config);
@@ -59,11 +59,11 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveAnyTest() {
-        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int>() {
+        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
             SerializeOnUpdate = false,
-            ToStringConverter = static x => x.ToString(),
-            FromStringConverter = static x => int.Parse(x)
+            ToTSerialized = static x => x.ToString(),
+            ToTValue = static x => int.Parse(x)
         });
 
         db.Upsert("David", 25);
@@ -81,11 +81,11 @@ public class CronusDbTests {
 
     [TestMethod]
     public void UpsertEventTest() {
-        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int>() {
+        var db = Cronus.CreateGenericDatabase(new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
             SerializeOnUpdate = false,
-            ToStringConverter = static x => x.ToString(),
-            FromStringConverter = static x => int.Parse(x)
+            ToTSerialized = static x => x.ToString(),
+            ToTValue = static x => int.Parse(x)
         });
 
         bool triggered = false;
@@ -99,11 +99,11 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveEventTest() {
-        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int>() {
+        var db = Cronus.CreateGenericDatabase(new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
             SerializeOnUpdate = false,
-            ToStringConverter = static x => x.ToString(),
-            FromStringConverter = static x => int.Parse(x)
+            ToTSerialized = static x => x.ToString(),
+            ToTValue = static x => int.Parse(x)
         });
 
         bool triggered = false;

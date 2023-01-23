@@ -26,7 +26,7 @@ var config = new CronusDbConfiguration<int>() {
 Path = @".\encrypted.db",
 EncryptionKey = "1q2w3e4r5t",
 ToStringConverter = static x => x.ToString(),
-FromStringConverter = static x => int.Parse(x)
+FromByteArrayConverter = static x => int.Parse(x)
 };
 
 var db = await Cronus<int>.Create(config);
