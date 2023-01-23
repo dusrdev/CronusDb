@@ -24,6 +24,13 @@ internal sealed class CronusAesProvider : IDisposable {
     private static byte[] CreateKey(string strKey) => SHA256.HashData(Encoding.UTF8.GetBytes(strKey));
 
     /// <summary>
+    /// Encrypts the bytes using the key
+    /// </summary>
+    /// <param name="unencrypted">original text</param>
+    /// <returns>Unicode string</returns>
+    public byte[] Encrypt(byte[] unencrypted) => _aes.EncryptCbc(unencrypted, _aes.IV);
+
+    /// <summary>
     /// Encrypts the text using the key
     /// </summary>
     /// <param name="unencrypted">original text</param>
@@ -33,6 +40,13 @@ internal sealed class CronusAesProvider : IDisposable {
         var result = _aes.EncryptCbc(buffer, _aes.IV);
         return Convert.ToBase64String(result);
     }
+
+    /// <summary>
+    /// Decrypts encrypted bytes
+    /// </summary>
+    /// <param name="encrypted">Encrypted text</param>
+    /// <returns>Transformed Unicode string</returns>
+    public byte[] Decrypt(ReadOnlySpan<byte> encrypted) => _aes.DecryptCbc(encrypted, _aes.IV);
 
     /// <summary>
     /// Decrypts encrypted text
