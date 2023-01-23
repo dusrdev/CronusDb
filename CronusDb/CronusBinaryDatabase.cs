@@ -28,7 +28,7 @@ public sealed class CronusBinaryDatabase<TValue> : GenericDatabase<TValue> {
     }
 
     /// <summary>
-    /// Returns the value if it exists, otherwise the default for <typeparamref name="T"/>.
+    /// Returns the value if it exists, otherwise the default for <typeparamref name="TValue"/>.
     /// </summary>
     /// <param name="key"></param>
     public override TValue? Get(string key) => _data.GetValueOrDefault(key);
