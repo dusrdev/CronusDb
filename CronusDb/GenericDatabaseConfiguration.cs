@@ -3,8 +3,9 @@
 /// <summary>
 /// Configuration for serializable databases
 /// </summary>
-/// <typeparam name="T"></typeparam>
-public record GenericDatabaseConfiguration<T> {
+/// <typeparam name="TValue"></typeparam>
+/// <typeparam name="TSerialized"></typeparam>
+public record GenericDatabaseConfiguration<TValue, TSerialized> {
     /// <summary>
     /// The path to the database file, including extension.
     /// </summary>
@@ -25,12 +26,12 @@ public record GenericDatabaseConfiguration<T> {
     public string? EncryptionKey { get; init; }
 
     /// <summary>
-    /// Serialization function for <typeparamref name="T"/> into string.
+    /// Serialization function for <typeparamref name="TValue"/> into <typeparamref name="TSerialized"/>.
     /// </summary>
-    public required Func<T, string> ToStringConverter { get; init; }
+    public required Func<TValue, TSerialized> ToTSerialized { get; init; }
 
     /// <summary>
-    /// Deserialization function for string into <typeparamref name="T"/>.
+    /// Deserialization function from <typeparamref name="TSerialized"/> into <typeparamref name="TValue"/>.
     /// </summary>
-    public required Func<string, T> FromStringConverter { get; init; }
+    public required Func<TSerialized, TValue> ToTValue { get; init; }
 }

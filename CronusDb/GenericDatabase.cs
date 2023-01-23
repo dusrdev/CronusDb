@@ -1,13 +1,16 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
+﻿using MemoryPack;
+
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CronusDb;
 
 /// <summary>
-/// Base type for the database
+/// Base type for the generic value database
 /// </summary>
-/// <typeparam name="T"></typeparam>
-public abstract class GenericDatabase<T> {
+/// <typeparam name="TValue"></typeparam>
+/// <typeparam name="TSerialized"></typeparam>
+public abstract class GenericDatabase<TValue, TSerialized> {
     /// <summary>
     /// Triggered when there is a change in the database.
     /// </summary>
@@ -27,20 +30,20 @@ public abstract class GenericDatabase<T> {
     /// Returns the value for the <paramref name="key"/>.
     /// </summary>
     /// <param name="key"></param>
-    public abstract T? Get(string key);
+    public abstract TValue? Get(string key);
 
     /// <summary>
     /// Updates or inserts a new <paramref name="value"/> with the <paramref name="key"/>.
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
-    public abstract void Upsert(string key,[DisallowNull] T value);
+    public abstract void Upsert(string key,[DisallowNull] TValue value);
 
     /// <summary>
-    /// An indexer option for <see cref="Get(string)"/> and <see cref="Upsert(string, T)"/>.
+    /// An indexer option for <see cref="Get(string)"/> and <see cref="Upsert(string, TValue)"/>.
     /// </summary>
     /// <param name="index"></param>
-    public virtual T? this[string index] {
+    public virtual TValue? this[string index] {
         get => Get(index);
         set => Upsert(index, value!);
     }
@@ -55,7 +58,7 @@ public abstract class GenericDatabase<T> {
     /// Removes all the keys and values in the dictionary for which the value passes the <paramref name="selector"/>.
     /// </summary>
     /// <param name="selector"></param>
-    public abstract void RemoveAny(Func<T, bool> selector);
+    public abstract void RemoveAny(Func<TValue, bool> selector);
 
     /// <summary>
     /// Saves the database to the hard disk.
@@ -67,25 +70,25 @@ public abstract class GenericDatabase<T> {
     /// </summary>
     public abstract void Serialize();
 
-    internal virtual void SerializeWithEncryption(IDictionary<string, string> data, GenericDatabaseConfiguration<T> config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        var encrypted = json.Encrypt(config.EncryptionKey!);
-        File.WriteAllText(config.Path, encrypted);
+    internal virtual void SerializeWithEncryption(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
+        var bin = MemoryPackSerializer.Serialize(data);
+        var encrypted = bin.Encrypt(config.EncryptionKey!);
+        File.WriteAllBytes(config.Path, encrypted);
     }
 
-    internal virtual async Task SerializeWithEncryptionAsync(IDictionary<string, string> data, GenericDatabaseConfiguration<T> config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        var encrypted = json.Encrypt(config.EncryptionKey!);
-        await File.WriteAllTextAsync(config.Path, encrypted);
+    internal virtual async Task SerializeWithEncryptionAsync(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
+        var bin = MemoryPackSerializer.Serialize(data);
+        var encrypted = bin.Encrypt(config.EncryptionKey!);
+        await File.WriteAllBytesAsync(config.Path, encrypted);
     }
 
-    internal virtual void SerializeWithoutEncryption(IDictionary<string, string> data, GenericDatabaseConfiguration<T> config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        File.WriteAllText(config.Path, json);
+    internal virtual void SerializeWithoutEncryption(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
+        var bin = MemoryPackSerializer.Serialize(data);
+        File.WriteAllBytes(config.Path, bin);
     }
 
-    internal virtual async Task SerializeWithoutEncryptionAsync(IDictionary<string, string> data, GenericDatabaseConfiguration<T> config) {
-        var json = JsonSerializer.Serialize(data, JsonContexts.Default.IDictionaryStringString);
-        await File.WriteAllTextAsync(config.Path, json);
+    internal virtual async Task SerializeWithoutEncryptionAsync(ConcurrentDictionary<string, TSerialized> data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
+        using var stream = File.OpenWrite(config.Path);
+        await MemoryPackSerializer.SerializeAsync(stream, data);
     }
 }
