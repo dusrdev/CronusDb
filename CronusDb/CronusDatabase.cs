@@ -7,16 +7,20 @@ namespace CronusDb;
 /// </summary>
 public sealed class CronusDatabase : Database {
     private readonly ConcurrentDictionary<string, string> _data;
-    private readonly DatabaseConfiguration _config;
+
+    /// <summary>
+    /// Holds the configuration for this database.
+    /// </summary>
+    public DatabaseConfiguration Config { get; private init; }
 
     internal CronusDatabase(ConcurrentDictionary<string, string>? data, DatabaseConfiguration config) {
         _data = data ?? new();
-        _config = config;
+        Config = config;
     }
 
     internal override void OnDataChanged(DataChangedEventArgs e) {
         base.OnDataChanged(e);
-        if (_config.SerializeOnUpdate) {
+        if (Config.SerializeOnUpdate) {
             Serialize();
         }
     }
@@ -61,12 +65,12 @@ public sealed class CronusDatabase : Database {
     /// <summary>
     /// Saves the database to the hard disk.
     /// </summary>
-    public override void Serialize() => Serializer.Serialize(_data, _config!.Path, _config!.EncryptionKey);
+    public override void Serialize() => Serializer.Serialize(_data, Config!.Path, Config!.EncryptionKey);
 
     /// <summary>
     /// Saves the database to the hard disk.
     /// </summary>
-    public override Task SerializeAsync() => Serializer.SerializeAsync(_data, _config!.Path, _config!.EncryptionKey);
+    public override Task SerializeAsync() => Serializer.SerializeAsync(_data, Config!.Path, Config!.EncryptionKey);
 
     /// <summary>
     /// Updates or inserts a new <paramref name="value" /> with the <paramref name="key" />.

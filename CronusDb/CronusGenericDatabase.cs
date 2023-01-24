@@ -9,17 +9,21 @@ namespace CronusDb;
 /// <typeparam name="TValue"></typeparam>
 public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
     private readonly ConcurrentDictionary<string, TValue> _data;
-    private readonly GenericDatabaseConfiguration<TValue, string> _config;
+
+    /// <summary>
+    /// Holds the configuration for this database.
+    /// </summary>
+    public GenericDatabaseConfiguration<TValue, string> Config { get; private init; }
 
     // This constructor is used for a serializable instance
     internal CronusGenericDatabase(ConcurrentDictionary<string, TValue>? data, GenericDatabaseConfiguration<TValue, string> config) {
         _data = data ?? new();
-        _config = config;
+        Config = config;
     }
 
     internal override void OnDataChanged(DataChangedEventArgs e) {
         base.OnDataChanged(e);
-        if (_config.SerializeOnUpdate) {
+        if (Config.SerializeOnUpdate) {
             Serialize();
         }
     }
@@ -93,7 +97,7 @@ public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
                 ChangeType = DataChangeType.Remove
             });
         }
-        if (count is 0 || !_config.SerializeOnUpdate) {
+        if (count is 0 || !Config.SerializeOnUpdate) {
             return;
         }
         Serialize();
@@ -104,9 +108,9 @@ public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
     /// </summary>
     /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override async Task SerializeAsync() {
-        var output = _data.Convert(_config!.ToTSerialized);
+        var output = _data.Convert(Config!.ToTSerialized);
 
-        await Serializer.SerializeAsync(output, _config!.Path, _config!.EncryptionKey);
+        await Serializer.SerializeAsync(output, Config!.Path, Config!.EncryptionKey);
     }
 
     /// <summary>
@@ -114,8 +118,8 @@ public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
     /// </summary>
     /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
     public override void Serialize() {
-        var output = _data.Convert(_config!.ToTSerialized);
+        var output = _data.Convert(Config!.ToTSerialized);
 
-        Serializer.Serialize(output, _config!.Path, _config!.EncryptionKey);
+        Serializer.Serialize(output, Config!.Path, Config!.EncryptionKey);
     }
 }
