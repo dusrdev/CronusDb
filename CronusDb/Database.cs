@@ -34,7 +34,7 @@ public abstract class Database {
     public abstract string? Get(string key, string? encryptionKey = null);
 
     /// <summary>
-    /// Updates or inserts a new <paramref name="value"/> with the <paramref name="key"/>.
+    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
@@ -91,7 +91,7 @@ public abstract class Database<TValue, TSerialized> {
     public abstract TValue? Get(string key);
 
     /// <summary>
-    /// Updates or inserts a new <paramref name="value"/> with the <paramref name="key"/>.
+    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
