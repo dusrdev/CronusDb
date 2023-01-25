@@ -10,9 +10,9 @@ public record DatabaseConfiguration {
     public required string Path { get; init; }
 
     /// <summary>
-    /// Automatically trigger serialization on Insert, Update and Delete.
+    /// Database options
     /// </summary>
-    public required bool SerializeOnUpdate { get; init; }
+    public DatabaseOptions Options { get; init; }
 
     /// <summary>
     /// General encryption key, the entire file will be encrypted with this.
