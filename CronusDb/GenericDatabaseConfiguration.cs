@@ -4,15 +4,14 @@
 /// Configuration for generic databases
 /// </summary>
 /// <typeparam name="TValue">The type for the values</typeparam>
-/// <typeparam name="TSerialized">The type for the serialized values</typeparam>
-public record GenericDatabaseConfiguration<TValue, TSerialized> : DatabaseConfiguration {
+public record DatabaseConfiguration<TValue> : DatabaseConfiguration {
     /// <summary>
-    /// Serialization function for <typeparamref name="TValue"/> into <typeparamref name="TSerialized"/>.
+    /// Serialization function for <typeparamref name="TValue"/> into byte[].
     /// </summary>
-    public required Func<TValue, TSerialized> ToTSerialized { get; init; }
+    public required Func<TValue, byte[]> ToTSerialized { get; init; }
 
     /// <summary>
-    /// Deserialization function from <typeparamref name="TSerialized"/> into <typeparamref name="TValue"/>.
+    /// Deserialization function from byte[] into <typeparamref name="TValue"/>.
     /// </summary>
-    public required Func<TSerialized, TValue> ToTValue { get; init; }
+    public required Func<byte[], TValue> ToTValue { get; init; }
 }
