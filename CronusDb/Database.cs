@@ -1,133 +1,135 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
 namespace CronusDb;
 
 /// <summary>
-/// Base type for the string value database
+/// Serializable database which supports per key encryption
 /// </summary>
-public abstract class Database {
-    /// <summary>
-    /// Triggered when there is a change in the database.
-    /// </summary>
-    public event EventHandler<DataChangedEventArgs>? DataChanged;
+public sealed class Database {
+    private readonly ConcurrentDictionary<string, byte[]> _data;
 
     /// <summary>
     /// Holds the configuration for this database.
     /// </summary>
-    public abstract DatabaseConfiguration Config { get; protected init; }
-
-    internal virtual void OnDataChanged(DataChangedEventArgs e) {
-        DataChanged?.Invoke(this, e);
-    }
-
-    /// <summary>
-    /// Checked whether the inner dictionary contains the <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    public abstract bool ContainsKey(string key);
-
-    /// <summary>
-    /// Returns the value for the <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="encryptionKey">individual encryption key for this specific value</param>
-    public abstract string? Get(string key, string? encryptionKey = null);
-
-    /// <summary>
-    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <param name="encryptionKey">individual encryption key for this specific value</param>
-    public abstract void Upsert(string key, [DisallowNull] string value, string? encryptionKey = null);
-
-    /// <summary>
-    /// Removes the <paramref name="key"/> and its value from the inner dictionary.
-    /// </summary>
-    /// <param name="key"></param>
-    public abstract bool Remove(string key);
-
-    /// <summary>
-    /// Saves the database to the hard disk.
-    /// </summary>
-    public abstract Task SerializeAsync();
-
-    /// <summary>
-    /// Saves the database to the hard disk.
-    /// </summary>
-    public abstract void Serialize();
-}
-
-/// <summary>
-/// Base type for the generic value database
-/// </summary>
-/// <typeparam name="TValue"></typeparam>
-/// <typeparam name="TSerialized"></typeparam>
-public abstract class Database<TValue, TSerialized> {
-    /// <summary>
-    /// Holds the configuration for this database.
-    /// </summary>
-    public abstract GenericDatabaseConfiguration<TValue, TSerialized> Config { get; protected init; }
+    public readonly DatabaseConfiguration Config;
 
     /// <summary>
     /// Triggered when there is a change in the database.
     /// </summary>
     public event EventHandler<DataChangedEventArgs>? DataChanged;
 
-    internal virtual void OnDataChanged(DataChangedEventArgs e) {
+    private void OnDataChanged(DataChangedEventArgs e) {
         DataChanged?.Invoke(this, e);
     }
+
+    internal Database(ConcurrentDictionary<string, byte[]>? data, DatabaseConfiguration config) {
+        _data = data ?? new();
+        Config = config;
+    }
+
+    /// <summary>
+    /// Returns the amount of entries in the database.
+    /// </summary>
+    public int Count => _data.Count;
 
     /// <summary>
     /// Checked whether the inner dictionary contains the <paramref name="key"/>.
     /// </summary>
     /// <param name="key"></param>
-    public abstract bool ContainsKey(string key);
+    public bool ContainsKey(string key) => _data.ContainsKey(key);
 
     /// <summary>
-    /// Returns the value for the <paramref name="key"/>.
+    /// Returns the value for the <paramref name="key"/> as a pure byte[].
     /// </summary>
     /// <param name="key"></param>
-    public abstract TValue? Get(string key);
-
-    /// <summary>
-    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    public abstract void Upsert(string key, [DisallowNull] TValue value);
-
-    /// <summary>
-    /// Indexer option for the getter and setter.
-    /// </summary>
-    /// <param name="index"></param>
+    /// <param name="encryptionKey">individual encryption key for this specific value</param>
     /// <remarks>
-    /// Unlike the <see cref="Dictionary{TKey, TValue}"/> this indexer will return default value if the key doesn't exist instead of throwing an exception.
+    /// This pure method which returns the value as byte[] allows you to use more complex but also more efficient serializers
     /// </remarks>
-    public virtual TValue? this[string index] {
-        get => Get(index);
-        set => Upsert(index, value!);
+    public byte[]? Get(string key, string? encryptionKey = null) {
+        if (!_data.TryGetValue(key, out var val)) {
+            return null;
+        }
+        if (encryptionKey is null) {
+            return val;
+        }
+        return val.Decrypt(encryptionKey);
     }
 
     /// <summary>
-    /// Removes all the keys and values in the dictionary for which the value passes the <paramref name="selector"/>.
+    /// Returns the value for the <paramref name="key"/> as string.
     /// </summary>
-    /// <param name="selector"></param>
-    public abstract void RemoveAny(Func<TValue, bool> selector);
+    /// <param name="key"></param>
+    /// <param name="encryptionKey">individual encryption key for this specific value</param>
+    public string? GetAsString(string key, string? encryptionKey = null) => Get(key, encryptionKey)?.ToUTF8String();
 
     /// <summary>
     /// Removes the <paramref name="key"/> and its value from the inner dictionary.
     /// </summary>
     /// <param name="key"></param>
-    public abstract bool Remove(string key);
+    public bool Remove(string key) {
+        if (!_data.TryRemove(key, out var val)) {
+            return false;
+        }
+        if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
+            Serialize();
+        }
+        if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+            OnDataChanged(new DataChangedEventArgs {
+                Key = key,
+                Value = val,
+                ChangeType = DataChangeType.Remove
+            });
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <param name="encryptionKey">individual encryption key for this specific value</param>
+    /// <remarks>
+    /// This pure method which accepts the value as byte[] allows you to use more complex but also more efficient serializers
+    /// </remarks>
+    public void Upsert(string key, byte[] value, string? encryptionKey = null) {
+        _data[key] = encryptionKey is null ? value : value.Encrypt(encryptionKey);
+        if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
+            Serialize();
+        }
+        if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+            OnDataChanged(new DataChangedEventArgs {
+                Key = key,
+                Value = value,
+                ChangeType = DataChangeType.Upsert
+            });
+        }
+    }
+
+    /// <summary>
+    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <param name="encryptionKey">individual encryption key for this specific value</param>
+    public void UpsertAsString(string key, string value, string? encryptionKey = null) {
+        ArgumentException.ThrowIfNullOrEmpty(value);
+        Upsert(key, value.ToByteArray(), encryptionKey);
+    }
+
+    /// <summary>
+    /// Returns an immutable copy of the keys in the inner dictionary
+    /// </summary>
+    public ImmutableList<string> Keys => ImmutableList.CreateRange(_data.Keys);
 
     /// <summary>
     /// Saves the database to the hard disk.
     /// </summary>
-    public abstract Task SerializeAsync();
+    public void Serialize() => _data.Serialize(Config!.Path, Config!.EncryptionKey);
 
     /// <summary>
-    /// Saves the database to the hard disk.
+    /// Saves the database to the hard disk asynchronously.
     /// </summary>
-    public abstract void Serialize();
+    public Task SerializeAsync() => _data.SerializeAsync(Config!.Path, Config!.EncryptionKey);
 }
