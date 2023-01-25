@@ -7,9 +7,9 @@ public enum DataChangeType {
     /// <summary>
     /// A key was inserted or updated
     /// </summary>
-    Upsert = 0,
+    Upsert = 1 << 0,
     /// <summary>
     /// A key was removed
     /// </summary>
-    Remove = 1
+    Remove = 1 << 1
 }
