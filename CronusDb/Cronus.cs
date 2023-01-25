@@ -1,98 +1,48 @@
 ﻿namespace CronusDb;
 
 /// <summary>
-/// Main entry point for database creation
+/// Entry point for database creation
 /// </summary>
 public static class Cronus {
     /// <summary>
-    /// Creates and returns a new instance of a binary value database
-    /// </summary>
-    /// <typeparam name="TValue"></typeparam>
-    /// <param name="configuration"></param>
-    /// <remarks>
-    /// Similar to <see cref="CronusGenericDatabase{TValue, TSerialized}"/> but even more efficient serialization
-    /// </remarks>
-    public static Database<TValue, byte[]> CreateBinaryDatabase<TValue>(GenericDatabaseConfiguration<TValue, byte[]> configuration)
-        => CreateGenericDatabaseInternal(configuration);
-
-    /// <summary>
-    /// Creates and returns a new instance of a binary value database
-    /// </summary>
-    /// <typeparam name="TValue"></typeparam>
-    /// <param name="configuration"></param>
-    /// <remarks>
-    /// Similar to <see cref="CronusGenericDatabase{TValue, TSerialized}"/> but even more efficient serialization
-    /// </remarks>
-    public static ValueTask<Database<TValue, byte[]>> CreateBinaryDatabaseAsync<TValue>(GenericDatabaseConfiguration<TValue, byte[]> configuration) => CreateGenericDatabaseAsyncInternal(configuration);
-
-    /// <summary>
-    /// Creates and returns a new instance of a string value database
-    /// </summary>
-    /// <typeparam name="TValue"></typeparam>
-    /// <param name="configuration"></param>
-    /// <remarks>
-    /// This is a serializable database with fast crud operations and better invalidation using <see cref="CronusGenericDatabase{TValue, TSerialized}.RemoveAny(Func{TValue, bool})"/>
-    /// </remarks>
-    public static Database<TValue, string> CreateGenericDatabase<TValue>(GenericDatabaseConfiguration<TValue, string> configuration)
-        => CreateGenericDatabaseInternal(configuration);
-
-    /// <summary>
-    /// Creates and returns a new instance of a string value database
-    /// </summary>
-    /// <typeparam name="TValue"></typeparam>
-    /// <param name="configuration"></param>
-    /// <remarks>
-    /// This is a serializable database with fast crud operations and better invalidation using <see cref="CronusGenericDatabase{TValue, TSerialized}.RemoveAny(Func{TValue, bool})"/>
-    /// </remarks>
-    public static ValueTask<Database<TValue, string>> CreateGenericDatabaseAsync<TValue>(GenericDatabaseConfiguration<TValue, string> configuration) => CreateGenericDatabaseAsyncInternal(configuration);
-
-    private static Database<TValue, TSerialized> CreateGenericDatabaseInternal<TValue, TSerialized>(GenericDatabaseConfiguration<TValue, TSerialized> configuration) {
-        if (!File.Exists(configuration.Path)) {
-            return new CronusGenericDatabase<TValue, TSerialized>(new(), configuration);
-        }
-
-        var dict = configuration.Path.Deserialize<TSerialized>(configuration.EncryptionKey);
-
-        if (dict is null) {
-            return new CronusGenericDatabase<TValue, TSerialized>(new(), configuration);
-        }
-
-        var output = dict.Convert(configuration.ToTValue);
-
-        return new CronusGenericDatabase<TValue, TSerialized>(output, configuration);
-    }
-
-    private static async ValueTask<Database<TValue, TSerialized>> CreateGenericDatabaseAsyncInternal<TValue, TSerialized>(GenericDatabaseConfiguration<TValue, TSerialized> configuration) {
-        if (!File.Exists(configuration.Path)) {
-            return new CronusGenericDatabase<TValue, TSerialized>(new(), configuration);
-        }
-
-        var dict = await configuration.Path.DeserializeAsync<TSerialized>(configuration.EncryptionKey);
-
-        if (dict is null) {
-            return new CronusGenericDatabase<TValue, TSerialized>(new(), configuration);
-        }
-
-        var output = dict.Convert(configuration.ToTValue);
-
-        return new CronusGenericDatabase<TValue, TSerialized>(output, configuration);
-    }
-
-    /// <summary>
     /// Creates and returns a new instance of a database
     /// </summary>
     /// <param name="configuration"></param>
     /// <remarks>
-    /// This is a serializable database with optional per key and global encryption, and without value serializers so you could use different ones per value, enables values of different types.
+    /// This database supports optional per key encryption, and data is stored as byte[] so you can use different types of values as long as you serialize them to byte[]
     /// </remarks>
     public static Database CreateDatabase(DatabaseConfiguration configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new CronusDatabase(new(), configuration);
+            return new Database(new(), configuration);
         }
 
-        var dict = configuration.Path.Deserialize<string>(configuration.EncryptionKey);
+        var dict = configuration.Path.Deserialize<byte[]>(configuration.EncryptionKey);
 
-        return new CronusDatabase(dict, configuration);
+        return new Database(dict, configuration);
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of a generic value database
+    /// </summary>
+    /// <typeparam name="TValue"></typeparam>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// Similar to <see cref="Database"/> but converters allow adding un-serialized values thus vastly improving performance of CRUD operations, also more options are supported, such as <see cref="Database{TValue}.RemoveAny(Func{TValue, bool})"/> and more.
+    /// </remarks>
+    public static Database<TValue> CreateDatabase<TValue>(DatabaseConfiguration<TValue> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new Database<TValue>(new(), configuration);
+        }
+
+        var dict = configuration.Path.Deserialize<byte[]>(configuration.EncryptionKey);
+
+        if (dict is null) {
+            return new Database<TValue>(new(), configuration);
+        }
+
+        var output = dict.Convert(configuration.ToTValue);
+
+        return new Database<TValue>(output, configuration);
     }
 
     /// <summary>
@@ -100,15 +50,39 @@ public static class Cronus {
     /// </summary>
     /// <param name="configuration"></param>
     /// <remarks>
-    /// This is a serializable database with optional per key and global encryption, and without value serializers so you could use different ones per value, enables values of different types.
+    /// This database supports optional per key encryption, and data is stored as byte[] so you can use different types of values as long as you serialize them to byte[]
     /// </remarks>
     public static async ValueTask<Database> CreateDatabaseAsync(DatabaseConfiguration configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new CronusDatabase(new(), configuration);
+            return new Database(new(), configuration);
         }
 
-        var dict = await configuration.Path.DeserializeAsync<string>(configuration.EncryptionKey);
+        var dict = await configuration.Path.DeserializeAsync<byte[]>(configuration.EncryptionKey);
 
-        return new CronusDatabase(dict, configuration);
+        return new Database(dict, configuration);
+    }
+
+    /// <summary>
+    /// Creates and returns a new instance of a generic value database
+    /// </summary>
+    /// <typeparam name="TValue"></typeparam>
+    /// <param name="configuration"></param>
+    /// <remarks>
+    /// Similar to <see cref="Database"/> but converters allow adding un-serialized values thus vastly improving performance of CRUD operations, also more options are supported, such as <see cref="Database{TValue}.RemoveAny(Func{TValue, bool})"/> and more.
+    /// </remarks>
+    public static async ValueTask<Database<TValue>> CreateDatabaseAsync<TValue>(DatabaseConfiguration<TValue> configuration) {
+        if (!File.Exists(configuration.Path)) {
+            return new Database<TValue>(new(), configuration);
+        }
+
+        var dict = await configuration.Path.DeserializeAsync<byte[]>(configuration.EncryptionKey);
+
+        if (dict is null) {
+            return new Database<TValue>(new(), configuration);
+        }
+
+        var output = dict.Convert(configuration.ToTValue);
+
+        return new Database<TValue>(output, configuration);
     }
 }
