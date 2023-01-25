@@ -6,80 +6,61 @@ namespace CronusDb;
 /// <summary>
 /// Fast Crud performance at the cost of slower serialization to disk.
 /// </summary>
-/// <typeparam name="TValue"></typeparam>
-public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
+/// <typeparam name="TValue">Value type</typeparam>
+/// <typeparam name="TSerialized">Value serialization type</typeparam>
+public sealed class CronusGenericDatabase<TValue, TSerialized> : Database<TValue, TSerialized> {
     private readonly ConcurrentDictionary<string, TValue> _data;
 
-    /// <summary>
-    /// Holds the configuration for this database.
-    /// </summary>
-    public GenericDatabaseConfiguration<TValue, string> Config { get; private init; }
+    /// <inheritdoc/>
+    public override GenericDatabaseConfiguration<TValue, TSerialized> Config { get; protected init; }
 
     // This constructor is used for a serializable instance
-    internal CronusGenericDatabase(ConcurrentDictionary<string, TValue>? data, GenericDatabaseConfiguration<TValue, string> config) {
+    internal CronusGenericDatabase(ConcurrentDictionary<string, TValue>? data, GenericDatabaseConfiguration<TValue, TSerialized> config) {
         _data = data ?? new();
         Config = config;
     }
 
-    internal override void OnDataChanged(DataChangedEventArgs e) {
-        base.OnDataChanged(e);
-        if (Config.SerializeOnUpdate) {
-            Serialize();
-        }
-    }
+    /// <inheritdoc/>
+    public override TValue? Get(string key) => _data.TryGetValue(key, out var val) ? val : default;
 
-    /// <summary>
-    /// Returns the value if it exists, otherwise the default for <typeparamref name="TValue"/>.
-    /// </summary>
-    /// <param name="key"></param>
-    public override TValue? Get(string key) => _data.GetValueOrDefault(key);
-
-    /// <summary>
-    /// Inserts or updates
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <exception cref="ArgumentNullException"/>
+    /// <inheritdoc/>
     public override void Upsert(string key, [DisallowNull] TValue value) {
         ArgumentNullException.ThrowIfNull(value);
         _data[key] = value;
-        OnDataChanged(new DataChangedEventArgs {
-            Key = key,
-            Value = value,
-            ChangeType = DataChangeType.Upsert
-        });
+        if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
+            Serialize();
+        }
+        if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+            OnDataChanged(new DataChangedEventArgs {
+                Key = key,
+                Value = value,
+                ChangeType = DataChangeType.Upsert
+            });
+        }
     }
 
-    /// <summary>
-    /// Checks whether the database contains the <paramref name="key"/>.
-    /// </summary>
-    /// <param name="key"></param>
+    /// <inheritdoc/>
     public override bool ContainsKey(string key) => _data.ContainsKey(key);
 
-    /// <summary>
-    /// Removes a value by <paramref name="key"/>
-    /// </summary>
-    /// <param name="key"></param>
-    /// <returns>True if successful, false if database did not contain <paramref name="key"/>.</returns>
+/// <inheritdoc/>
     public override bool Remove(string key) {
         if (!_data.TryRemove(key, out var val)) {
             return false;
         }
-        OnDataChanged(new DataChangedEventArgs {
-            Key = key,
-            Value = val,
-            ChangeType = DataChangeType.Remove
-        });
+        if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
+            Serialize();
+        }
+        if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+            OnDataChanged(new DataChangedEventArgs {
+                Key = key,
+                Value = val,
+                ChangeType = DataChangeType.Remove
+            });
+        }
         return true;
     }
 
-    /// <summary>
-    /// Loops through all database entries and removes any for which the <paramref name="selector"/> returns true.
-    /// </summary>
-    /// <param name="selector"></param>
-    /// <remarks>
-    /// This is the main way to perform cache invalidation.
-    /// </remarks>
+    /// <inheritdoc/>
     public override void RemoveAny(Func<TValue, bool> selector) {
         int count = 0;
         foreach (var (k, v) in _data) {
@@ -91,32 +72,28 @@ public sealed class CronusGenericDatabase<TValue> : Database<TValue> {
             }
             count++;
             // Triggering the base version skip the serialization to improve performance for bulk removals.
-            base.OnDataChanged(new DataChangedEventArgs() {
-                Key = k,
-                Value = v,
-                ChangeType = DataChangeType.Remove
-            });
+            if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+                OnDataChanged(new DataChangedEventArgs() {
+                    Key = k,
+                    Value = v,
+                    ChangeType = DataChangeType.Remove
+                });
+            }
         }
-        if (count is 0 || !Config.SerializeOnUpdate) {
+        if (count is 0 || !Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
             return;
         }
         Serialize();
     }
 
-    /// <summary>
-    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{TValue, TSerialized}"/>.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
+    /// <inheritdoc/>
     public override async Task SerializeAsync() {
         var output = _data.Convert(Config!.ToTSerialized);
 
         await Serializer.SerializeAsync(output, Config!.Path, Config!.EncryptionKey);
     }
 
-    /// <summary>
-    /// Serializes the database to the path in <see cref="GenericDatabaseConfiguration{TValue, TSerialized}"/>.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">If the value of certain key could not be converted using the "ToStringConverter"</exception>
+    /// <inheritdoc/>
     public override void Serialize() {
         var output = _data.Convert(Config!.ToTSerialized);
 
