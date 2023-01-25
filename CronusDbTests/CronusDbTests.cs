@@ -8,7 +8,6 @@ public class CronusDbTests {
     public async Task GeneralTest_CreateAddSerializeDeserialize() {
         var config = new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
-            SerializeOnUpdate = false,
             ToTSerialized = static x => x.ToString(),
             ToTValue = static x => int.Parse(x)
         };
@@ -34,7 +33,6 @@ public class CronusDbTests {
     public void GeneralTestEncrypted_CreateAddSerializeDeserialize() {
         var config = new GenericDatabaseConfiguration<int, string>() {
             Path = @".\encrypted.db",
-            SerializeOnUpdate = false,
             EncryptionKey = "1q2w3e4r5t",
             ToTSerialized = static x => x.ToString(),
             ToTValue = static x => int.Parse(x)
@@ -59,9 +57,8 @@ public class CronusDbTests {
 
     [TestMethod]
     public void RemoveAnyTest() {
-        var db = Cronus.CreateGenericDatabase<int>(new GenericDatabaseConfiguration<int, string>() {
+        var db = Cronus.CreateGenericDatabase(new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
-            SerializeOnUpdate = false,
             ToTSerialized = static x => x.ToString(),
             ToTValue = static x => int.Parse(x)
         });
@@ -83,7 +80,7 @@ public class CronusDbTests {
     public void UpsertEventTest() {
         var db = Cronus.CreateGenericDatabase(new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
-            SerializeOnUpdate = false,
+            Options = DatabaseOptions.TriggerUpdateEvents,
             ToTSerialized = static x => x.ToString(),
             ToTValue = static x => int.Parse(x)
         });
@@ -101,7 +98,7 @@ public class CronusDbTests {
     public void RemoveEventTest() {
         var db = Cronus.CreateGenericDatabase(new GenericDatabaseConfiguration<int, string>() {
             Path = @".\temp.db",
-            SerializeOnUpdate = false,
+            Options = DatabaseOptions.TriggerUpdateEvents,
             ToTSerialized = static x => x.ToString(),
             ToTValue = static x => int.Parse(x)
         });
