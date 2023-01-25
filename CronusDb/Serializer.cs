@@ -25,7 +25,7 @@ internal static class Serializer {
         return DeserializeDict<TSerialized>(bin, path, encryptionKey);
     }
 
-    private static ConcurrentDictionary<string, TSerialized>? DeserializeDict<TSerialized>(ReadOnlySpan<byte> bin, string path, string? encryptionKey = null) {
+    private static ConcurrentDictionary<string, TSerialized>? DeserializeDict<TSerialized>(byte[] bin, string path, string? encryptionKey = null) {
         try {
             if (bin.Length is 0) {
                 return default;
