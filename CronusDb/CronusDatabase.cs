@@ -49,10 +49,10 @@ public sealed class CronusDatabase : Database {
     }
 
     /// <inheritdoc/>
-    public override void Serialize() => Serializer.Serialize(_data, Config!.Path, Config!.EncryptionKey);
+    public override void Serialize() => _data.Serialize(Config!.Path, Config!.EncryptionKey);
 
     /// <inheritdoc/>
-    public override Task SerializeAsync() => Serializer.SerializeAsync(_data, Config!.Path, Config!.EncryptionKey);
+    public override Task SerializeAsync() => _data.SerializeAsync(Config!.Path, Config!.EncryptionKey);
 
     /// <inheritdoc/>
     public override void Upsert(string key, [DisallowNull] string value, string? encryptionKey = null) {

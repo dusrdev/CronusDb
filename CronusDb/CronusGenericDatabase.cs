@@ -90,13 +90,13 @@ public sealed class CronusGenericDatabase<TValue, TSerialized> : Database<TValue
     public override async Task SerializeAsync() {
         var output = _data.Convert(Config!.ToTSerialized);
 
-        await Serializer.SerializeAsync(output, Config!.Path, Config!.EncryptionKey);
+        await output.SerializeAsync(Config!.Path, Config!.EncryptionKey);
     }
 
     /// <inheritdoc/>
     public override void Serialize() {
         var output = _data.Convert(Config!.ToTSerialized);
 
-        Serializer.Serialize(output, Config!.Path, Config!.EncryptionKey);
+        output.Serialize(Config!.Path, Config!.EncryptionKey);
     }
 }
