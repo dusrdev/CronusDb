@@ -5,12 +5,12 @@ using System.Collections.Concurrent;
 namespace CronusDb;
 
 internal static class Serializer {
-    internal static void Serialize<TSerialized>(ConcurrentDictionary<string, TSerialized> data, string path, string? encryptionKey) {
+    internal static void Serialize<TSerialized>(this ConcurrentDictionary<string, TSerialized> data, string path, string? encryptionKey) {
         var bin = MemoryPackSerializer.Serialize(data);
         File.WriteAllBytes(path, string.IsNullOrWhiteSpace(encryptionKey) ? bin : bin.Encrypt(encryptionKey));
     }
 
-    internal static async Task SerializeAsync<TSerialized>(ConcurrentDictionary<string, TSerialized> data, string path, string? encryptionKey) {
+    internal static async Task SerializeAsync<TSerialized>(this ConcurrentDictionary<string, TSerialized> data, string path, string? encryptionKey) {
         var bin = MemoryPackSerializer.Serialize(data);
         await File.WriteAllBytesAsync(path, string.IsNullOrWhiteSpace(encryptionKey) ? bin : bin.Encrypt(encryptionKey));
     }
