@@ -11,6 +11,11 @@ public abstract class Database {
     /// </summary>
     public event EventHandler<DataChangedEventArgs>? DataChanged;
 
+    /// <summary>
+    /// Holds the configuration for this database.
+    /// </summary>
+    public abstract DatabaseConfiguration Config { get; protected init; }
+
     internal virtual void OnDataChanged(DataChangedEventArgs e) {
         DataChanged?.Invoke(this, e);
     }
@@ -57,7 +62,13 @@ public abstract class Database {
 /// Base type for the generic value database
 /// </summary>
 /// <typeparam name="TValue"></typeparam>
-public abstract class Database<TValue> {
+/// <typeparam name="TSerialized"></typeparam>
+public abstract class Database<TValue, TSerialized> {
+    /// <summary>
+    /// Holds the configuration for this database.
+    /// </summary>
+    public abstract GenericDatabaseConfiguration<TValue, TSerialized> Config { get; protected init; }
+
     /// <summary>
     /// Triggered when there is a change in the database.
     /// </summary>
@@ -90,6 +101,9 @@ public abstract class Database<TValue> {
     /// Indexer option for the getter and setter.
     /// </summary>
     /// <param name="index"></param>
+    /// <remarks>
+    /// Unlike the <see cref="Dictionary{TKey, TValue}"/> this indexer will return default value if the key doesn't exist instead of throwing an exception.
+    /// </remarks>
     public virtual TValue? this[string index] {
         get => Get(index);
         set => Upsert(index, value!);
