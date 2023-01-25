@@ -1,30 +1,11 @@
 ﻿namespace CronusDb;
 
 /// <summary>
-/// Configuration for serializable databases
+/// Configuration for generic databases
 /// </summary>
-/// <typeparam name="TValue"></typeparam>
-/// <typeparam name="TSerialized"></typeparam>
-public record GenericDatabaseConfiguration<TValue, TSerialized> {
-    /// <summary>
-    /// The path to the database file, including extension.
-    /// </summary>
-    public required string Path { get; init; }
-
-    /// <summary>
-    /// Automatically trigger serialization on Insert, Update and Delete.
-    /// </summary>
-    public required bool SerializeOnUpdate { get; init; }
-
-    /// <summary>
-    /// Encryption key for encrypting the database file with AES256.
-    /// </summary>
-    /// <remarks>
-    /// <para>Leave as null if encryption is not required.</para>
-    /// <para>Only effects serialization and deserialization</para>
-    /// </remarks>
-    public string? EncryptionKey { get; init; }
-
+/// <typeparam name="TValue">The type for the values</typeparam>
+/// <typeparam name="TSerialized">The type for the serialized values</typeparam>
+public record GenericDatabaseConfiguration<TValue, TSerialized> : DatabaseConfiguration {
     /// <summary>
     /// Serialization function for <typeparamref name="TValue"/> into <typeparamref name="TSerialized"/>.
     /// </summary>
