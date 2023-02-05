@@ -41,6 +41,9 @@ internal static class Serializer {
 
     internal static ConcurrentDictionary<string, TSerialized> Convert<TValue, TSerialized>(this ConcurrentDictionary<string, TValue> dict, Func<TValue, TSerialized> converter) {
         var newDict = new ConcurrentDictionary<string, TSerialized>();
+        if (dict.IsEmpty) {
+            return newDict;
+        }
         foreach (var (k, v) in dict) {
             try {
                 newDict[k] = converter(v);

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics;
+
 namespace CronusDb;
 
 /// <summary>
@@ -68,6 +70,17 @@ public sealed class Database {
     /// </summary>
     /// <param name="key"></param>
     public bool Remove(string key) {
+        if (_data.IsEmpty) {
+            if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+                OnDataChanged(new DataChangedEventArgs {
+                    Key = key,
+                    Value = null,
+                    ChangeType = DataChangeType.Remove
+                });
+            }
+            return true;
+        }
+
         if (!_data.TryRemove(key, out var val)) {
             return false;
         }
@@ -91,9 +104,10 @@ public sealed class Database {
     /// <param name="value"></param>
     /// <param name="encryptionKey">individual encryption key for this specific value</param>
     /// <remarks>
-    /// This pure method which accepts the value as byte[] allows you to use more complex but also more efficient serializers
+    /// This pure method which accepts the value as byte[] allows you to use more complex but also more efficient serializers.
     /// </remarks>
     public void Upsert(string key, byte[] value, string? encryptionKey = null) {
+        Debug.Assert(value is not null);
         _data[key] = encryptionKey is null ? value : value.Encrypt(encryptionKey);
         if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
             Serialize();
@@ -113,9 +127,36 @@ public sealed class Database {
     /// <param name="key"></param>
     /// <param name="value"></param>
     /// <param name="encryptionKey">individual encryption key for this specific value</param>
+    /// <remarks>
+    /// This is much less efficient time and memory wise than <see cref="Upsert(string, byte[], string?)"/>.
+    /// </remarks>
     public void UpsertAsString(string key, string value, string? encryptionKey = null) {
-        ArgumentException.ThrowIfNullOrEmpty(value);
-        Upsert(key, value.ToByteArray(), encryptionKey);
+        Debug.Assert(!string.IsNullOrWhiteSpace(value));
+
+        var bytes = string.IsNullOrEmpty(value) ?
+                    Array.Empty<byte>()
+                    : value.ToByteArray();
+
+        Upsert(key, bytes, encryptionKey);
+    }
+
+    /// <summary>
+    /// Updates or inserts a new <paramref name="value"/> @ <paramref name="key"/>.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <param name="encryptionKey">individual encryption key for this specific value</param>
+    /// <remarks>
+    /// This is the least efficient option as it uses a reflection JSON serializer and byte conversion.
+    /// </remarks>
+    public void UpsertAsT<T>(string key, T value, string? encryptionKey = null) {
+        Debug.Assert(value is not null);
+
+        var bytes = value is null ?
+                    Array.Empty<byte>()
+                    : value.Serialize().ToByteArray();
+
+        Upsert(key, bytes, encryptionKey);
     }
 
     /// <summary>

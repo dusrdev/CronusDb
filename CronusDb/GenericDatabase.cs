@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace CronusDb;
 
@@ -68,8 +69,11 @@ public sealed class Database<TValue> {
     /// </summary>
     /// <param name="key"></param>
     /// <param name="value"></param>
+    /// <remarks>
+    /// Do not upsert null values, they most likely will cause issues with serialization.
+    /// </remarks>
     public void Upsert(string key, TValue value) {
-        ArgumentNullException.ThrowIfNull(value);
+        Debug.Assert(value is not null);
         _data[key] = value;
         if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
             Serialize();
@@ -94,6 +98,17 @@ public sealed class Database<TValue> {
     /// </summary>
     /// <param name="key"></param>
     public bool Remove(string key) {
+        if (_data.IsEmpty) {
+            if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+                OnDataChanged(new DataChangedEventArgs {
+                    Key = key,
+                    Value = null,
+                    ChangeType = DataChangeType.Remove
+                });
+            }
+            return true;
+        }
+
         if (!_data.TryRemove(key, out var val)) {
             return false;
         }
@@ -115,6 +130,11 @@ public sealed class Database<TValue> {
     /// </summary>
     /// <param name="selector"></param>
     public void RemoveAny(Func<TValue, bool> selector) {
+        Debug.Assert(selector is not null);
+        Debug.Assert(!_data.IsEmpty);
+        if (_data.IsEmpty) {
+            return;
+        }
         int count = 0;
         foreach (var (k, v) in _data) {
             if (!selector.Invoke(v)) {
