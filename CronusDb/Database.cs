@@ -41,21 +41,24 @@ public sealed class Database {
     public bool ContainsKey(string key) => _data.ContainsKey(key);
 
     /// <summary>
-    /// Returns the value for the <paramref name="key"/> as a pure byte[].
+    /// Returns the value for the <paramref name="key"/> as a byte[].
     /// </summary>
     /// <param name="key"></param>
     /// <param name="encryptionKey">individual encryption key for this specific value</param>
     /// <remarks>
-    /// This pure method which returns the value as byte[] allows you to use more complex but also more efficient serializers
+    /// <para>This pure method which returns the value as byte[] allows you to use more complex but also more efficient serializers
+    /// </para>
+    /// <para>If the value doesn't exist null is returned. You can use this to check if a value exists.</para>
     /// </remarks>
     public byte[]? Get(string key, string? encryptionKey = null) {
         if (!_data.TryGetValue(key, out var val)) {
+#pragma warning disable S1168 // Empty arrays and collections should be returned instead of null
             return null;
+#pragma warning restore S1168 // Empty arrays and collections should be returned instead of null
         }
-        if (encryptionKey is null) {
-            return val;
-        }
-        return val.Decrypt(encryptionKey);
+        return encryptionKey is null
+            ? val
+            : val.Decrypt(encryptionKey);
     }
 
     /// <summary>
