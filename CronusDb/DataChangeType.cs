@@ -3,7 +3,7 @@
 /// <summary>
 /// The type of changed that occurred on a key
 /// </summary>
-public enum DataChangeType {
+public enum DataChangeType : byte {
     /// <summary>
     /// A key was inserted or updated
     /// </summary>
