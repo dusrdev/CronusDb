@@ -4,7 +4,7 @@ using System.Text;
 namespace CronusDb;
 
 internal sealed class CronusAesProvider : IDisposable {
-    private static readonly byte[] _vector = { 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 23, 19, 17 };
+    private static readonly byte[] Vector = { 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 23, 19, 17 };
     private readonly Aes _aes;
 
     /// <summary>
@@ -16,7 +16,7 @@ internal sealed class CronusAesProvider : IDisposable {
         _aes.KeySize = 256;
         _aes.Padding = PaddingMode.PKCS7;
         _aes.Key = CreateKey(strKey);
-        _aes.IV = _vector;
+        _aes.IV = Vector;
         _aes.Mode = CipherMode.CBC;
     }
 
