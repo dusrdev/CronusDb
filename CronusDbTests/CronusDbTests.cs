@@ -46,7 +46,7 @@ public class CronusDbTests {
         db.Upsert("Alex", 63);
 
         db.Serialize();
-        
+
         var rdb = Cronus.CreateDatabase(config);
 
         Assert.AreEqual(25, rdb.Get("David"));
