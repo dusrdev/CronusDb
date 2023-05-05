@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace CronusDb;
@@ -14,6 +15,8 @@ internal sealed class CronusAesProvider : IDisposable {
     public CronusAesProvider(string strKey) {
         _aes = Aes.Create();
         _aes.KeySize = 256;
+        _aes.BlockSize = 128;
+        _aes.FeedbackSize = 8;
         _aes.Padding = PaddingMode.PKCS7;
         _aes.Key = CreateKey(strKey);
         _aes.IV = Vector;
@@ -28,6 +31,7 @@ internal sealed class CronusAesProvider : IDisposable {
     /// </summary>
     /// <param name="unencrypted">original text</param>
     /// <returns>Unicode string</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte[] Encrypt(byte[] unencrypted) => _aes.EncryptCbc(unencrypted, _aes.IV);
 
     /// <summary>
@@ -37,7 +41,7 @@ internal sealed class CronusAesProvider : IDisposable {
     /// <returns>Unicode string</returns>
     public string Encrypt(string unencrypted) {
         var buffer = Encoding.UTF8.GetBytes(unencrypted);
-        var result = _aes.EncryptCbc(buffer, _aes.IV);
+        var result = Encrypt(buffer);
         return Convert.ToBase64String(result);
     }
 
@@ -45,8 +49,15 @@ internal sealed class CronusAesProvider : IDisposable {
     /// Decrypts encrypted bytes
     /// </summary>
     /// <param name="encrypted">Encrypted text</param>
-    /// <returns>Transformed Unicode string</returns>
-    public byte[] Decrypt(ReadOnlySpan<byte> encrypted) => _aes.DecryptCbc(encrypted, _aes.IV);
+    /// <returns>Transformed Unicode string, or empty if it failed</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte[] Decrypt(ReadOnlySpan<byte> encrypted) {
+        try {
+            return _aes.DecryptCbc(encrypted, _aes.IV);
+        } catch (CryptographicException) {
+            return Array.Empty<byte>();
+        }
+    }
 
     /// <summary>
     /// Decrypts encrypted text
@@ -55,8 +66,10 @@ internal sealed class CronusAesProvider : IDisposable {
     /// <returns>Transformed Unicode string</returns>
     public string Decrypt(string encrypted) {
         var buffer = Convert.FromBase64String(encrypted);
-        var result = _aes.DecryptCbc(buffer, _aes.IV);
-        return Encoding.UTF8.GetString(result);
+        var result = Decrypt(buffer);
+        return result.Length is 0
+            ? string.Empty
+            : Encoding.UTF8.GetString(result);
     }
 
     public void Dispose() {
