@@ -13,7 +13,7 @@ public class EncryptionTests {
             "dasdasd\"sadad"
         };
 
-        var aes = new CronusDb.CronusAesProvider("1q2w3e4r5t");
+        using var aes = new CronusDb.CronusAesProvider("1q2w3e4r5t");
 
         var processed = originals.Select(aes.Encrypt).ToArray();
         var decrypted = processed.Select(aes.Decrypt).ToArray();
