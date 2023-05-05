@@ -13,10 +13,14 @@ public static class Cronus {
     /// </remarks>
     public static Database CreateDatabase(DatabaseConfiguration configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new Database(new(), configuration);
+            return new Database(
+                new(configuration.Options.GetComparer()),
+                configuration);
         }
 
-        var dict = configuration.Path.Deserialize<byte[]>(configuration.EncryptionKey);
+        var dict = configuration.Path.Deserialize<byte[]>(
+            configuration.EncryptionKey,
+            configuration.Options);
 
         return new Database(dict, configuration);
     }
@@ -31,13 +35,19 @@ public static class Cronus {
     /// </remarks>
     public static Database<TValue> CreateDatabase<TValue>(DatabaseConfiguration<TValue> configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new Database<TValue>(new(), configuration);
+            return new Database<TValue>(
+                new(configuration.Options.GetComparer()),
+                configuration);
         }
 
-        var dict = configuration.Path.Deserialize<byte[]>(configuration.EncryptionKey);
+        var dict = configuration.Path.Deserialize<byte[]>(
+            configuration.EncryptionKey,
+            configuration.Options);
 
         if (dict is null) {
-            return new Database<TValue>(new(), configuration);
+            return new Database<TValue>(
+                new(configuration.Options.GetComparer()),
+                configuration);
         }
 
         var output = dict.Convert(configuration.ToTValue);
@@ -54,10 +64,14 @@ public static class Cronus {
     /// </remarks>
     public static async ValueTask<Database> CreateDatabaseAsync(DatabaseConfiguration configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new Database(new(), configuration);
+            return new Database(
+                new(configuration.Options.GetComparer()),
+                configuration);
         }
 
-        var dict = await configuration.Path.DeserializeAsync<byte[]>(configuration.EncryptionKey);
+        var dict = await configuration.Path.DeserializeAsync<byte[]>(
+            configuration.EncryptionKey,
+            configuration.Options);
 
         return new Database(dict, configuration);
     }
@@ -72,13 +86,19 @@ public static class Cronus {
     /// </remarks>
     public static async ValueTask<Database<TValue>> CreateDatabaseAsync<TValue>(DatabaseConfiguration<TValue> configuration) {
         if (!File.Exists(configuration.Path)) {
-            return new Database<TValue>(new(), configuration);
+            return new Database<TValue>(
+                new(configuration.Options.GetComparer()),
+                configuration);
         }
 
-        var dict = await configuration.Path.DeserializeAsync<byte[]>(configuration.EncryptionKey);
+        var dict = await configuration.Path.DeserializeAsync<byte[]>(
+            configuration.EncryptionKey,
+            configuration.Options);
 
         if (dict is null) {
-            return new Database<TValue>(new(), configuration);
+            return new Database<TValue>(
+                new(configuration.Options.GetComparer()),
+                configuration);
         }
 
         var output = dict.Convert(configuration.ToTValue);
