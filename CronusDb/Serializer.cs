@@ -45,9 +45,24 @@ internal static class Serializer {
                 ? bin
                 : bin.Decrypt(encryptionKey!);
             var deserialized = MemoryPackSerializer.Deserialize<ConcurrentDictionary<string, TSerialized>>(buffer);
-            // Workaround for modifying the comparer after deserialization
-            //TODO: Find alternative to this workaround
-            return deserialized is null ? new() : new(deserialized, options.GetComparer());
+            //TODO: find way to incorporate comparer into deserialization
+            // Workaround region
+            // Get comparer just once
+            var comparer = options.GetComparer();
+
+            // If the deserialized dictionary is null, return a new one with the comparer
+            // comparer is null if the options are default
+            if (deserialized is null) {
+                return new(comparer);
+            }
+
+            // Deserialized is not null and no comparer needed so return it
+            if (comparer is null) {
+                return deserialized;
+            }
+
+            // Copy the deserialized dictionary into a new one with the comparer
+            return new(deserialized, comparer);
         } catch {
             throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
