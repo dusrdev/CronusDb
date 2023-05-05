@@ -15,8 +15,10 @@ public enum DatabaseOptions {
     /// <summary>
     /// Trigger the OnDataChanged event on upsert and delete.
     /// </summary>
-    /// <remarks>
-    /// Is disabled by default to improve performance
-    /// </remarks>
     TriggerUpdateEvents = 1 << 1,
+
+    /// <summary>
+    /// Specifies that the database should ignore key cases.
+    /// </summary>
+    IgnoreKeyCases = 1 << 2,
 }
