@@ -19,4 +19,8 @@ internal static class Extensions {
     public static string ToUTF8String(this byte[] bytes) => Encoding.UTF8.GetString(bytes);
 
     public static string Serialize<T>(this T value) => JsonSerializer.Serialize(value);
+
+    internal static IEqualityComparer<string>? GetComparer(this DatabaseOptions options) => options.HasFlag(DatabaseOptions.IgnoreKeyCases)
+            ? StringComparer.OrdinalIgnoreCase
+            : null;
 }
