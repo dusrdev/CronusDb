@@ -24,8 +24,13 @@ public sealed class Database {
         DataChanged?.Invoke(this, e);
     }
 
+    /// <summary>
+    /// Default constructor is disallowed. Use Cronus factory methods instead.
+    /// </summary>
+    public Database() => throw new InvalidOperationException("Use of default constructor is disallowed. Use Cronus factory methods instead.");
+
     internal Database(ConcurrentDictionary<string, byte[]>? data, DatabaseConfiguration config) {
-        _data = data ?? new();
+        _data = data ?? new(config.Options.GetComparer());
         Config = config;
     }
 
@@ -98,6 +103,23 @@ public sealed class Database {
             });
         }
         return true;
+    }
+
+    /// <summary>
+    /// Clears all keys and values from the database.
+    /// </summary>
+    public void Clear() {
+        _data.Clear();
+        if (Config.Options.HasFlag(DatabaseOptions.SerializeOnUpdate)) {
+            Serialize();
+        }
+        if (Config.Options.HasFlag(DatabaseOptions.TriggerUpdateEvents)) {
+            OnDataChanged(new DataChangedEventArgs {
+                Key = "ALL",
+                Value = null,
+                ChangeType = DataChangeType.Remove
+            });
+        }
     }
 
     /// <summary>
