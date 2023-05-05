@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CronusDb", "CronusDb\Cronus
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CronusDbTests", "CronusDbTests\CronusDbTests.csproj", "{8FC86CBF-3246-4FE1-8C01-D9EB566ABE95}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CronusDb.ManualTests", "CronusDb.ManualTests\CronusDb.ManualTests.csproj", "{7BCC95D6-BE27-429E-A8D8-19B3EC3A3315}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1DF9576E-4EBD-432F-B73C-4D7FDD7B8A79}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig

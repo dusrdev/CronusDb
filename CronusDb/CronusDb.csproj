@@ -6,21 +6,34 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Authors>David Shnayder</Authors>
-    <Copyright>David Shnayder - 2022</Copyright>
+    <Copyright>David Shnayder</Copyright>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>CronusDB</Title>
+    <Description>High Performance Dictionary-Based Persistent Database</Description>
+    <PackageProjectUrl>https://github.com/dusrdev/CronusDb</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dusrdev/CronusDb</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Database;HighPerformance;Persistent;Encryption</PackageTags>
   </PropertyGroup>
 	
  <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
     <_Parameter1>CronusDbTests</_Parameter1>
     </AssemblyAttribute>
-	 <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-		 <_Parameter1>CronusDb.ManualTests</_Parameter1>
-	 </AssemblyAttribute>
   </ItemGroup>
 	
  <ItemGroup>
    <None Include="..\.editorconfig" Link=".editorconfig" />
  </ItemGroup>
+
+ <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="CHANGELOG.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 	
  <ItemGroup>
    <PackageReference Include="MemoryPack" Version="1.9.13" />

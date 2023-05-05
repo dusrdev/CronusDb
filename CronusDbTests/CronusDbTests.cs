@@ -1,11 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using CronusDb;
 
-namespace CronusDb.Tests;
+using FluentAssertions;
 
-[TestClass]
+using Xunit;
+
+namespace CronusDbTests;
+
 public class CronusDbTests {
-    [TestMethod]
-    public async Task GeneralTest_CreateAddSerializeDeserialize() {
+    [Fact]
+    public async Task Database_CreateAddSerializeDeserialize() {
         var config = new DatabaseConfiguration<int>() {
             Path = @".\temp.db",
             ToTSerialized = static x => x.ToString().ToByteArray(),
@@ -23,14 +26,40 @@ public class CronusDbTests {
 
         var rdb = await Cronus.CreateDatabaseAsync(config);
 
-        Assert.AreEqual(25, rdb.Get("David"));
-        Assert.AreEqual(28, rdb.Get("Ben"));
-        Assert.AreEqual(37, rdb.Get("Nick"));
-        Assert.AreEqual(63, rdb.Get("Alex"));
+        rdb.Get("David").Should().Be(25);
+        rdb.Get("Ben").Should().Be(28);
+        rdb.Get("Nick").Should().Be(37);
+        rdb.Get("Alex").Should().Be(63);
     }
 
-    [TestMethod]
-    public void GeneralTestEncrypted_CreateAddSerializeDeserialize() {
+    [Fact]
+    public async Task DatabaseIgnoreKeyCase_CreateAddSerializeDeserialize() {
+        var config = new DatabaseConfiguration<int>() {
+            Path = @".\temp.db",
+            Options = DatabaseOptions.IgnoreKeyCases,
+            ToTSerialized = static x => x.ToString().ToByteArray(),
+            ToTValue = static x => int.Parse(x.ToUTF8String())
+        };
+
+        var db = await Cronus.CreateDatabaseAsync(config);
+
+        db.Upsert("David", 25);
+        db.Upsert("Ben", 28);
+        db.Upsert("Nick", 37);
+        db.Upsert("Alex", 63);
+
+        await db.SerializeAsync();
+
+        var rdb = await Cronus.CreateDatabaseAsync(config);
+
+        rdb.Get("daViD").Should().Be(25);
+        rdb.Get("bEN").Should().Be(28);
+        rdb.Get("NiCK").Should().Be(37);
+        rdb.Get("aLEX").Should().Be(63);
+    }
+
+    [Fact]
+    public void DatabaseEncrypted_CreateAddSerializeDeserialize() {
         var config = new DatabaseConfiguration<int>() {
             Path = @".\encrypted.db",
             EncryptionKey = "1q2w3e4r5t",
@@ -49,13 +78,13 @@ public class CronusDbTests {
 
         var rdb = Cronus.CreateDatabase(config);
 
-        Assert.AreEqual(25, rdb.Get("David"));
-        Assert.AreEqual(28, rdb.Get("Ben"));
-        Assert.AreEqual(37, rdb.Get("Nick"));
-        Assert.AreEqual(63, rdb.Get("Alex"));
+        rdb.Get("David").Should().Be(25);
+        rdb.Get("Ben").Should().Be(28);
+        rdb.Get("Nick").Should().Be(37);
+        rdb.Get("Alex").Should().Be(63);
     }
 
-    [TestMethod]
+    [Fact]
     public void RemoveAnyTest() {
         var db = Cronus.CreateDatabase(new DatabaseConfiguration<int>() {
             Path = @".\temp.db",
@@ -70,13 +99,13 @@ public class CronusDbTests {
 
         db.RemoveAny(static x => x > 30);
 
-        Assert.IsTrue(db.ContainsKey("David"));
-        Assert.IsTrue(db.ContainsKey("Ben"));
-        Assert.IsFalse(db.ContainsKey("Nick"));
-        Assert.IsFalse(db.ContainsKey("Alex"));
+        db.ContainsKey("David").Should().BeTrue();
+        db.ContainsKey("Ben").Should().BeTrue();
+        db.ContainsKey("Nick").Should().BeFalse();
+        db.ContainsKey("Alex").Should().BeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public void UpsertEventTest() {
         var db = Cronus.CreateDatabase(new DatabaseConfiguration<int>() {
             Path = @".\temp.db",
@@ -91,10 +120,10 @@ public class CronusDbTests {
 
         db.Upsert("David", 25);
 
-        Assert.IsTrue(triggered);
+        triggered.Should().BeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public void RemoveEventTest() {
         var db = Cronus.CreateDatabase(new DatabaseConfiguration<int>() {
             Path = @".\temp.db",
@@ -115,6 +144,6 @@ public class CronusDbTests {
 
         db.Remove("David");
 
-        Assert.IsTrue(triggered);
+        triggered.Should().BeTrue();
     }
 }

@@ -1,10 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using FluentAssertions;
+
+using Xunit;
 
 namespace CronusDbTests;
 
-[TestClass]
 public class EncryptionTests {
-    [TestMethod]
+    [Fact]
     public void EncryptionTest() {
         string[] originals = {
             "David",
@@ -17,6 +18,6 @@ public class EncryptionTests {
         var processed = originals.Select(aes.Encrypt).ToArray();
         var decrypted = processed.Select(aes.Decrypt).ToArray();
 
-        CollectionAssert.AreEqual(originals, decrypted);
+        decrypted.Should().BeEquivalentTo(originals);
     }
 }
