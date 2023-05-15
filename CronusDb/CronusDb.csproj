@@ -20,24 +20,18 @@
     <PackageTags>Database;HighPerformance;Persistent;Encryption</PackageTags>
   </PropertyGroup>
 
- <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-    <_Parameter1>CronusDbTests</_Parameter1>
-    </AssemblyAttribute>
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
 
- <ItemGroup>
-   <None Include="..\.editorconfig" Link=".editorconfig" />
- </ItemGroup>
-
- <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
-    <None Include="CHANGELOG.md" Pack="true" PackagePath="\"/>
-    <None Include="LICENSE.txt" Pack="true" PackagePath="\"/>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="CHANGELOG.md" Pack="true" PackagePath="\" />
+    <None Include="LICENSE.txt" Pack="true" PackagePath="\" />
   </ItemGroup>
 
- <ItemGroup>
-   <PackageReference Include="MemoryPack" Version="1.9.13" />
- </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MemoryPack" Version="1.9.13" />
+  </ItemGroup>
 
 </Project>
