@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 
 using MemoryPack;
+using MemoryPack.Formatters;
 
 namespace CronusDb;
 
@@ -44,25 +45,20 @@ internal static class Serializer {
             var buffer = string.IsNullOrWhiteSpace(encryptionKey)
                 ? bin
                 : bin.Decrypt(encryptionKey!);
-            var deserialized = MemoryPackSerializer.Deserialize<ConcurrentDictionary<string, TSerialized>>(buffer);
-            //TODO: find way to incorporate comparer into deserialization
-            // Workaround region
-            // Get comparer just once
-            var comparer = options.GetComparer();
 
-            // If the deserialized dictionary is null, return a new one with the comparer
-            // comparer is null if the options are default
-            if (deserialized is null) {
-                return new(comparer);
-            }
+            var formatter = new ConcurrentDictionaryFormatter<string, TSerialized>(options.GetComparer());
 
-            // Deserialized is not null and no comparer needed so return it
-            if (comparer is null) {
-                return deserialized;
-            }
+            var state = MemoryPackReaderOptionalStatePool.Rent(MemoryPackSerializerOptions.Default);
 
-            // Copy the deserialized dictionary into a new one with the comparer
-            return new(deserialized, comparer);
+            var reader = new MemoryPackReader(buffer, state);
+
+            ConcurrentDictionary<string, TSerialized>? dict = null;
+
+            #pragma warning disable CS8620 // TSerialized cannot be null anyway.
+            formatter.Deserialize(ref reader, ref dict);
+            #pragma warning restore CS8620
+
+            return dict;
         } catch {
             throw new InvalidDataException($"Could not deserialize the database from <{path}>");
         }
