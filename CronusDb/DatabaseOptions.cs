@@ -3,7 +3,7 @@
 /// <summary>
 /// Database options
 /// </summary>
-public enum DatabaseOptions {
+public enum DatabaseOptions : byte {
     /// <summary>
     /// Serialize database after upsert or delete.
     /// </summary>

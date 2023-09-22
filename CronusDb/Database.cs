@@ -57,9 +57,7 @@ public sealed class Database {
     /// </remarks>
     public byte[]? Get(string key, string? encryptionKey = null) {
         if (!_data.TryGetValue(key, out var val)) {
-#pragma warning disable S1168 // Empty arrays and collections should be returned instead of null
             return null;
-#pragma warning restore S1168 // Empty arrays and collections should be returned instead of null
         }
         return encryptionKey is null
             ? val
