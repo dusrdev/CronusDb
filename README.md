@@ -1,3 +1,5 @@
+CronusDB is deprecated - use [Sharpify.Data](https://github.com/dusrdev/Sharpify) instead.
+
 # CronusDB
 
 An incredibly performant key-value-pair based serializable/persistent in-memory database
